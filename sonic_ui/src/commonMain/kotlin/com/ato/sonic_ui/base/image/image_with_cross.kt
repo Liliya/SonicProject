@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -28,6 +27,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ato.helpers.getAsyncImageLoader
+import com.ato.helpers.getPlatformContext
 import com.ato.ui_state.base.image.UiImagePicker
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
@@ -78,6 +79,7 @@ fun DisplayImageWithCross(
                 noImageHolder()
             } else {
                 CoilImage(
+                    imageLoader = { getAsyncImageLoader(getPlatformContext()) },
                     modifier = Modifier
                         .clip(shape)
                         .size(size.dp),
@@ -88,7 +90,6 @@ fun DisplayImageWithCross(
                     )
                 )
             }
-
         }
 
         if (data != null) {

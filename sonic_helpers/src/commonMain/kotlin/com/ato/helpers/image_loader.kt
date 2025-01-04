@@ -1,5 +1,6 @@
 package com.ato.helpers
 
+import androidx.compose.runtime.Composable
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.disk.DiskCache
@@ -31,5 +32,8 @@ fun getAsyncImageLoader(context: PlatformContext): ImageLoader {
         .logger(DebugLogger())
         .build()
 }
+
+@Composable
+expect fun getPlatformContext() :PlatformContext
 
 expect fun getCacheDir(context: PlatformContext): Path

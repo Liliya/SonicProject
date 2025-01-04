@@ -72,10 +72,12 @@ fun DisplayFullWish(
             }
 
             if (!wish.url.isNullOrEmpty()) {
-                ClickableUrlText(
-                    url = wish.url!!,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                SelectionContainer {
+                    ClickableUrlText(
+                        url = wish.url!!,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }

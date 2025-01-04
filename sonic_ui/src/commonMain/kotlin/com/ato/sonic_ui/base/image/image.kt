@@ -21,6 +21,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ato.helpers.getAsyncImageLoader
+import com.ato.helpers.getPlatformContext
 import com.ato.ui_state.base.image.UiImagePicker
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
@@ -67,6 +69,7 @@ fun DisplayImage(
                 )
             } else {
                 CoilImage(
+                    imageLoader = { getAsyncImageLoader(getPlatformContext()) },
                     modifier = Modifier
                         .clip(shape)
                         .border(
