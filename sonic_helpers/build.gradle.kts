@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
