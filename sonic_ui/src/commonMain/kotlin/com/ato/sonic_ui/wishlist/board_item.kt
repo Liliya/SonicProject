@@ -30,56 +30,58 @@ fun DisplayBoard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        border = CardDefaults.outlinedCardBorder(), // тонкая рамка вместо тени
+        elevation = CardDefaults.cardElevation(0.dp) // без тени — минимализм
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Display the emoji if it's not null
             if (data.boardEmoji != null) {
                 DisplayEmojiAva(
-                    size = 60f,
-                    sizeFactor = 0.7f,
+                    size = 48f,           // немного меньше, чтобы не перетягивал фокус
+                    sizeFactor = 0.65f,
                     emoji = data.boardEmoji,
-                    boarderAlpha = 0f,
+                    boarderAlpha = 0f
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp)) // Space between emoji and texts
+            Spacer(modifier = Modifier.width(16.dp))
 
             Column(
-                modifier = Modifier.weight(1f) // Take up remaining horizontal space
+                modifier = Modifier.weight(1f)
             ) {
-                // Display the board name
                 DisplayText(
                     state = data.boardName,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(modifier = Modifier.height(4.dp)) // Small space between name and count
+                Spacer(modifier = Modifier.height(4.dp))
 
-                // Display the count of wishes
                 DisplayText(
                     state = data.boardWishCount,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             if (onAddClicked != null) {
-                Spacer(modifier = Modifier.width(8.dp)) // Space between emoji and texts
+                Spacer(modifier = Modifier.width(12.dp))
 
                 CenteredIconCard(
-                    elevation = CardDefaults.cardElevation(4.dp),
+                    elevation = CardDefaults.cardElevation(0.dp),
                     icon = Icons.Filled.Add,
                     onClick = onAddClicked,
                     modifier = Modifier
-                        .height(60.dp)
-                        .width(60.dp)
+                        .height(40.dp)
+                        .width(40.dp)
                 )
             }
         }

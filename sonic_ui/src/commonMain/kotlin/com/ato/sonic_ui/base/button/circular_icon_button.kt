@@ -21,21 +21,22 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CircularIcon(
     icon: ImageVector,
-    iconSize: Dp = 24.dp,
-    circleSize: Dp = 48.dp,
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    iconSize: Dp = 20.dp,
+    circleSize: Dp = 44.dp,
+    backgroundColor: Color = Color.Transparent, // убираем фон
+    iconTint: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
     Box(
-        modifier = modifier.clickable(
-            indication = null,
-            interactionSource = remember { MutableInteractionSource() },
-        ) { onClick.invoke() }
-            .size(circleSize)
+        modifier = modifier
             .clip(CircleShape)
-            .background(backgroundColor),
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onClick
+            )
+            .size(circleSize),
         contentAlignment = Alignment.Center
     ) {
         Icon(

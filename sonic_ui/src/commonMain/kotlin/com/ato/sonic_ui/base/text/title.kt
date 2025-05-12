@@ -193,7 +193,6 @@ fun ColumnScope.DisplayTitle(
     )
 }
 
-// TODO: use TopAppBar ?
 @Composable
 fun DisplayAppBarTitle(
     state: UiTitle,
@@ -201,66 +200,64 @@ fun DisplayAppBarTitle(
     onBackClicked: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    DisplayTitleUnified(
+        title = stringResource(state.title),
+        onClick = onClick,
+        onBackClicked = onBackClicked,
+        button = state.button
+    )
+}
+
+@Composable
+fun DisplayTitleUnified(
+    title: String,
+    onClick: () -> Unit = {},
+    onBackClicked: (() -> Unit)? = null,
+    button: Button? = null,
+    modifier: Modifier = Modifier
+) {
+    Spacer(modifier = Modifier.height(24.dp))
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .padding(top = 16.dp, bottom = 8.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            val title = if (state.titleFormatArgs == null) {
-                stringResource(state.title)
-            } else {
-                stringResource(state.title, state.titleFormatArgs!!)
-            }
-
-
-            if (onBackClicked != null) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                            onClick = onBackClicked,
-                        )
-                        .padding(8.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            } else {
-                Spacer(modifier = Modifier.width(16.dp))
-            }
-
-            Text(
-                text = title,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                modifier = Modifier.weight(1f),
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 24.sp,
+        if (onBackClicked != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onBackClicked)
+                    .padding(8.dp)
             )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
 
-            state.button?.let {
-                when (it) {
-                    is UiButton -> DisplayButton(
-                        state = it,
-                        onClick = onClick,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                    )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier
+                .weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
 
-                    is UiIconButton -> DisplayUiIconButton(
-                        state = it,
-                        onClick = onClick,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                    )
-                }
+        button?.let {
+            when (it) {
+                is UiButton -> DisplayButton(state = it, onClick = onClick)
+                is UiIconButton -> DisplayUiIconButton(state = it, onClick = onClick)
             }
         }
     }
+
+    HorizontalSpaceLine(
+        spaceTop = 8.dp,
+        line = 0.5.dp,
+        lineColor = MaterialTheme.colorScheme.outlineVariant,
+        spaceBottom = 16.dp
+    )
 }
