@@ -16,6 +16,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,44 +38,43 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
-    Column {
-        HorizontalDivider(
-            Modifier
-                .fillMaxWidth()
-                .height(1.dp),
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-        )
-
-        NavigationBar(
-            tonalElevation = 0.dp,
-            containerColor = MaterialTheme.colorScheme.surface,
-            modifier = Modifier
-                .height(64.dp)
-        ) {
-            items.forEachIndexed { index, (uiIconText, text, isSelected) ->
-                NavigationBarItem(
-                    selected = isSelected,
-                    onClick = {
-                        onClick(index)
-                    },
-                    icon = {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            uiIconText.Display(
-                                tint = LocalContentColor.current,
-                                selected = isSelected,
+    NavigationBar(
+        tonalElevation = 0.dp,
+        containerColor = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .height(64.dp)
+    ) {
+        items.forEachIndexed { index, (uiIconText, text, isSelected) ->
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = { onClick(index) },
+                icon = {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
+                    ) {
+                        uiIconText.Display(
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else LocalContentColor.current.copy(alpha = 0.6f),
+                            selected = isSelected
+                        )
+                        if (text != null) {
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (isSelected)
+                                    MaterialTheme.colorScheme.primary
+                                else LocalContentColor.current.copy(alpha = 0.6f)
                             )
-                            if (text != null) {
-                                Text(
-                                    text = text,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
                         }
                     }
+                },
+                alwaysShowLabel = true,
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-            }
+            )
         }
     }
 }
