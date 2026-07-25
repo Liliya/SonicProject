@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import com.ato.sonic_ui.base.icons.DisplayIcon
 import com.ato.ui_state.base.text.UiMoreText
 
@@ -24,6 +25,7 @@ fun DisplayMore(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.outline,
     content:  @Composable BoxScope.()->Unit = {},
+    clickableTestTag: String? = null,
     onClicked: () -> Unit
 ) {
     Box(modifier = modifier) {
@@ -36,6 +38,7 @@ fun DisplayMore(
                     interactionSource = remember { MutableInteractionSource() },
                     onClick = onClicked
                 )
+                .let { if (clickableTestTag != null) it.testTag(clickableTestTag) else it }
         ) {
             DisplayText(state = state.text, color = color)
             DisplayIcon(state = state.icon, tint = color)
