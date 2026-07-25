@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.ato.sonic_ui.base.emoji.DisplayEmojiAva
 import com.ato.sonic_ui.base.text.DisplayText
@@ -27,6 +28,7 @@ fun DisplayBoard(
     data: UiBoard,
     onAddClicked: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    addButtonTestTag: String? = null,
 ) {
     Card(
         modifier = modifier,
@@ -82,6 +84,7 @@ fun DisplayBoard(
                     modifier = Modifier
                         .height(40.dp)
                         .width(40.dp)
+                        .let { if (addButtonTestTag != null) it.testTag(addButtonTestTag) else it }
                 )
             }
         }

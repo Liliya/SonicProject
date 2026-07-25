@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -198,13 +199,15 @@ fun DisplayAppBarTitle(
     state: UiTitle,
     onClick: () -> Unit = {},
     onBackClicked: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    buttonTestTag: String? = null
 ) {
     DisplayTitleUnified(
         title = stringResource(state.title),
         onClick = onClick,
         onBackClicked = onBackClicked,
-        button = state.button
+        button = state.button,
+        buttonTestTag = buttonTestTag
     )
 }
 
@@ -214,7 +217,8 @@ fun DisplayTitleUnified(
     onClick: () -> Unit = {},
     onBackClicked: (() -> Unit)? = null,
     button: Button? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    buttonTestTag: String? = null
 ) {
     Spacer(modifier = Modifier.height(24.dp))
     Row(
@@ -247,9 +251,10 @@ fun DisplayTitleUnified(
         )
 
         button?.let {
+            val buttonModifier = buttonTestTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier
             when (it) {
-                is UiButton -> DisplayButton(state = it, onClick = onClick)
-                is UiIconButton -> DisplayUiIconButton(state = it, onClick = onClick)
+                is UiButton -> DisplayButton(state = it, onClick = onClick, modifier = buttonModifier)
+                is UiIconButton -> DisplayUiIconButton(state = it, onClick = onClick, modifier = buttonModifier)
             }
         }
     }

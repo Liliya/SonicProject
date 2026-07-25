@@ -70,6 +70,9 @@ kotlin {
             implementation(libs.landscapist.coil3)
         }
 
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
     }
 }
 
