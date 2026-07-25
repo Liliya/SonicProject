@@ -71,6 +71,10 @@ kotlin {
             implementation(libs.ktor.http)
 
         }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
     }
 }
 
