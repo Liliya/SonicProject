@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ExpandableCircleWithIcon(
     modifier: Modifier = Modifier,
+    expandContentDescription: String? = null,
     content: @Composable () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -58,7 +59,7 @@ fun ExpandableCircleWithIcon(
                 )
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
+                    contentDescription = expandContentDescription,
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.rotate(rotationAngle)
                 )

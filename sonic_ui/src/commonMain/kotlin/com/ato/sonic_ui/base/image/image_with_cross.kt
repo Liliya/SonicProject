@@ -43,6 +43,7 @@ fun DisplayImageWithCross(
     sizeFactor: Float = 0.5f,
     shape: Shape = CircleShape,
     modifier: Modifier = Modifier,
+    clearContentDescription: String? = null,
     noImageHolder: @Composable BoxScope.() -> Unit = {
         Text(
             text = "+",
@@ -112,7 +113,7 @@ fun DisplayImageWithCross(
                 Icon(
                     modifier = Modifier.padding(2.dp),
                     imageVector = Icons.Default.Close,
-                    contentDescription = null,
+                    contentDescription = clearContentDescription,
                     tint = LocalContentColor.current.copy(alpha = 0.3f)
                 )
             }

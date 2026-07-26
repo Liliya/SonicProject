@@ -21,7 +21,12 @@ fun CenteredIconCard(
     onClick: () -> Unit,
     elevation: CardElevation = CardDefaults.cardElevation(),
     colors: CardColors = CardDefaults.cardColors(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /**
+     * Что произнесёт скринридер. У карточки нет текста, поэтому без подписи она
+     * для него — безымянная кнопка.
+     */
+    contentDescription: String? = null,
 ) {
     Card(
         modifier = modifier,
@@ -35,7 +40,7 @@ fun CenteredIconCard(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = contentDescription,
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurface
             )

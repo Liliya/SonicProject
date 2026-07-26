@@ -35,46 +35,56 @@ import com.ato.sonic_ui.base.Display
 import com.ato.ui_state.base.NavBarItem
 import com.ato.ui_state.base.UiIcon
 import com.ato.ui_state.base.UiNavBar
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
+/**
+ * Нижняя навигация.
+ *
+ * Три вещи, которые тут были не так:
+ * - подпись рисовалась внутри слота `icon`, поэтому пилюля выделения Material 3
+ *   охватывала иконку вместе с текстом; теперь текст в своём слоте `label`, а
+ *   пилюля — вокруг иконки, как и задумано;
+ * - высота была жёстко 64dp, и при системном увеличении шрифта подпись
+ *   обрезалась; теперь высота своя у `NavigationBar`;
+ * - цвета брались из `LocalContentColor` с альфой, вместо ролей темы.
+ */
 @Composable
 fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
     NavigationBar(
         tonalElevation = 0.dp,
         containerColor = MaterialTheme.colorScheme.surface,
-        modifier = Modifier
-            .height(64.dp)
     ) {
-        items.forEachIndexed { index, (uiIconText, text, isSelected) ->
+        items.forEachIndexed { index, item ->
+            val label = item.titleRes?.let { stringResource(it) } ?: item.title
+
             NavigationBarItem(
                 modifier = Modifier.testTag("nav_item_$index"),
-                selected = isSelected,
+                selected = item.isSelected,
                 onClick = { onClick(index) },
                 icon = {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
-                    ) {
-                        uiIconText.Display(
-                            tint = if (isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else LocalContentColor.current.copy(alpha = 0.6f),
-                            selected = isSelected
+                    item.icon.Display(
+                        // Подпись уже читается скринридером, поэтому иконку
+                        // отдельно озвучивать не нужно.
+                        tint = LocalContentColor.current,
+                        selected = item.isSelected,
+                    )
+                },
+                label = label?.let {
+                    {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelMedium,
                         )
-                        if (text != null) {
-                            Text(
-                                text = text,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (isSelected)
-                                    MaterialTheme.colorScheme.primary
-                                else LocalContentColor.current.copy(alpha = 0.6f)
-                            )
-                        }
                     }
                 },
                 alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.surfaceVariant
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
                 )
             )
         }
@@ -126,7 +136,7 @@ fun UiNavBarItem_Empty_Preview() {
 fun MUiBottomBarItem_One_Preview() {
     UiNavBar(
         listOf(
-            NavBarItem(UiIcon(Icons.Filled.Home), "Home")
+            NavBarItem(icon = UiIcon(Icons.Filled.Home), title = "Home")
         )
     ).Display()
 }

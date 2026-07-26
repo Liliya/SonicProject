@@ -3,6 +3,7 @@ package com.ato.sonic_ui.base.bottom_sheet
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ fun BottomSheet(
     onDismissRequest: () -> Unit,
     minHeight: Dp = 300.dp,
     modifier: Modifier = Modifier,
+    closeContentDescription: String? = null,
     content: @Composable () -> Unit
 ) {
     // Создаем состояние для управления `BottomSheet`
@@ -70,17 +72,24 @@ fun BottomSheet(
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.TopStart)
                         )
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
+                        // Крестик был иконкой 24dp и всей областью нажатия
+                        // заодно — вдвое меньше минимума в 48dp.
+                        Box(
                             modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(48.dp)
                                 .clickable(
                                     indication = null,
                                     interactionSource = remember { MutableInteractionSource() },
                                     onClick = onDismissRequest
-                                )
-                                .align(Alignment.TopEnd)
-                        )
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = closeContentDescription,
+                            )
+                        }
                     }
 
                     content()

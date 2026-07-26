@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
@@ -29,10 +28,11 @@ fun DisplayBoard(
     onAddClicked: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     addButtonTestTag: String? = null,
+    addContentDescription: String? = null,
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
@@ -81,9 +81,12 @@ fun DisplayBoard(
                     elevation = CardDefaults.cardElevation(0.dp),
                     icon = Icons.Filled.Add,
                     onClick = onAddClicked,
+                    contentDescription = addContentDescription,
+                    // Было 40dp — ниже минимума в 48dp, из-за чего в том числе
+                    // промахивались UI-тесты.
                     modifier = Modifier
-                        .height(40.dp)
-                        .width(40.dp)
+                        .height(48.dp)
+                        .width(48.dp)
                         .let { if (addButtonTestTag != null) it.testTag(addButtonTestTag) else it }
                 )
             }
