@@ -1,9 +1,9 @@
 [versions]
-android-compile-sdk = "34"
+android-compile-sdk = "35"
 android-min-sdk = "24"
 android-target-sdk = "34"
 
-agp = "8.5.2"
+agp = "8.7.3"
 calfFilePicker = "0.5.5"
 calfFilePickerCoil = "0.5.1"
 chromecastSender = "0.29"
