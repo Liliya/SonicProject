@@ -30,7 +30,9 @@ fun UiIcon.Display(
         Icon(
             modifier = Modifier.align(Alignment.Center),
             imageVector = icon as ImageVector,
-            contentDescription = null,
+            // UiIcon всегда носил contentDescription, и он всегда терялся здесь:
+            // для скринридера каждая такая иконка была безымянной.
+            contentDescription = contentDescription.ifEmpty { null },
             tint = tint ?: if (selected) {
                 MaterialTheme.colorScheme.onPrimary
             } else MaterialTheme.colorScheme.onPrimary.copy(
