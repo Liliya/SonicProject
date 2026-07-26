@@ -22,10 +22,12 @@ import androidx.compose.ui.unit.dp
 fun CircularIcon(
     icon: ImageVector,
     iconSize: Dp = 20.dp,
-    circleSize: Dp = 44.dp,
+    /** Не меньше 48dp: это и область нажатия. */
+    circleSize: Dp = 48.dp,
     backgroundColor: Color = Color.Transparent, // убираем фон
     iconTint: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     onClick: () -> Unit = {}
 ) {
     Box(
@@ -41,7 +43,7 @@ fun CircularIcon(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             modifier = Modifier.size(iconSize),
             tint = iconTint
         )

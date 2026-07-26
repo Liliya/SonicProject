@@ -28,6 +28,7 @@ fun DisplayBoard(
     onAddClicked: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     addButtonTestTag: String? = null,
+    addContentDescription: String? = null,
 ) {
     Card(
         modifier = modifier,
@@ -80,9 +81,12 @@ fun DisplayBoard(
                     elevation = CardDefaults.cardElevation(0.dp),
                     icon = Icons.Filled.Add,
                     onClick = onAddClicked,
+                    contentDescription = addContentDescription,
+                    // Было 40dp — ниже минимума в 48dp, из-за чего в том числе
+                    // промахивались UI-тесты.
                     modifier = Modifier
-                        .height(40.dp)
-                        .width(40.dp)
+                        .height(48.dp)
+                        .width(48.dp)
                         .let { if (addButtonTestTag != null) it.testTag(addButtonTestTag) else it }
                 )
             }
