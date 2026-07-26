@@ -36,7 +36,7 @@ fun DisplayUiIconButton(
             } else {
                 Icon(
                     imageVector = state.icon,
-                    contentDescription = null,
+                    contentDescription = state.contentDescription,
                 )
             }
         }

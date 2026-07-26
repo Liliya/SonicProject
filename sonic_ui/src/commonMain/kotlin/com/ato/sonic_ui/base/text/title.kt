@@ -68,13 +68,15 @@ fun LazyItemScope.DisplayTitle(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "",
+                    // 36dp были и значком, и всей областью нажатия — ниже
+                    // минимума в 48dp. Значок остался 24dp.
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .clickable(
                             onClick = onBackClicked,
                         )
-                        .padding(8.dp),
+                        .padding(12.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             } else {
@@ -145,13 +147,15 @@ fun ColumnScope.DisplayTitle(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "",
+                    // 36dp были и значком, и всей областью нажатия — ниже
+                    // минимума в 48dp. Значок остался 24dp.
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .clickable(
                             onClick = onBackClicked,
                         )
-                        .padding(8.dp),
+                        .padding(12.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             } else {
@@ -233,10 +237,10 @@ fun DisplayTitleUnified(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .clickable(onClick = onBackClicked)
-                    .padding(8.dp)
+                    .padding(12.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
