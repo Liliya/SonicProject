@@ -36,7 +36,7 @@ fun AppMessageHost(
             val text = if (message.formatArg == null) {
                 getString(message.text)
             } else {
-                getString(message.text, message.formatArg)
+                getString(message.text, message.formatArg!!)
             }
             val actionLabel = message.actionLabel?.let { getString(it) }
 
