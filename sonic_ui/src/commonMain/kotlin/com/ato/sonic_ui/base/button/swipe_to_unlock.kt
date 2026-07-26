@@ -2,6 +2,7 @@
 
 package com.ato.sonic_ui.base.button
 
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -60,12 +61,16 @@ fun SwipeButton(
     val density = LocalDensity.current
     val positionalThreshold = { distance: Float -> distance * 0.999f }
     val velocityThreshold = { with(density) { 10000.dp.toPx() } }
-    val animationSpec = tween<Float>()
+    // Compose Foundation 1.7 split the single animationSpec in two: the snap that
+    // settles on an anchor, and the decay that carries a fling past one.
+    val snapAnimationSpec = tween<Float>()
+    val decayAnimationSpec = exponentialDecay<Float>()
 
     val state = rememberSaveable(
         density,
         saver = AnchoredDraggableState.Saver(
-            animationSpec = animationSpec,
+            snapAnimationSpec = snapAnimationSpec,
+            decayAnimationSpec = decayAnimationSpec,
             positionalThreshold = positionalThreshold,
             velocityThreshold = velocityThreshold,
         )
@@ -74,7 +79,8 @@ fun SwipeButton(
             initialValue = DragAnchors.Start,
             positionalThreshold = positionalThreshold,
             velocityThreshold = velocityThreshold,
-            animationSpec = animationSpec,
+            snapAnimationSpec = snapAnimationSpec,
+            decayAnimationSpec = decayAnimationSpec,
         )
     }
     val contentSizePx = with(density) { contentSize.toPx() }
