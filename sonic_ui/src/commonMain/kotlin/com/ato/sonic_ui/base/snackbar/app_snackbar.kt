@@ -33,10 +33,14 @@ fun AppMessageHost(
 ) {
     LaunchedEffect(hostState) {
         AppMessages.messages.collect { message ->
+            // formatArg lives in sonic_helpers, so it cannot be smart cast here:
+            // Kotlin will not narrow a public property from another module. Same
+            // reason text.kt and display_radio_card.kt spell it out with !!, and
+            // the null check right above makes it safe.
             val text = if (message.formatArg == null) {
                 getString(message.text)
             } else {
-                getString(message.text, message.formatArg)
+                getString(message.text, message.formatArg!!)
             }
             val actionLabel = message.actionLabel?.let { getString(it) }
 
