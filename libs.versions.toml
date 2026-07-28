@@ -61,7 +61,7 @@ sqliteBundledJvm = "2.5.2"
 chromecast-sender = { module = "com.pierfrancescosoffritti.androidyoutubeplayer:chromecast-sender", version.ref = "chromecastSender" }
 decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref = "decompose" }
 decompose-compose = { group = "com.arkivanov.decompose", name = "extensions-compose", version.ref = "decompose" }
-decompose-essenty = { group = "com.arkivanov.essenty", name = "lifecycle-coroutines", version.ref = "decompose" }
+decompose-essenty = { group = "com.arkivanov.essenty", name = "lifecycle-coroutines", version.ref = "essenty" }
 essenty-lifecycle = { group = "com.arkivanov.essenty", name = "lifecycle", version.ref = "essenty" }
 essenty-stateKeeper = { group = "com.arkivanov.essenty", name = "state-keeper", version.ref = "essenty" }
 essenty-instanceKeeper = { group = "com.arkivanov.essenty", name = "instance-keeper", version.ref = "essenty" }
