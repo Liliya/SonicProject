@@ -18,7 +18,7 @@ junit = "4.13.2"
 junit-version = "1.2.1"
 espresso-core = "3.6.1"
 kotlinxDatetime = "0.8.0"
-landscapistCoil3 = "2.4.0"
+landscapistCoil3 = "2.11.0"
 logging-interceptor = "4.12.0"
 okio = "3.18.0"
 peekabooImagePicker = "0.5.2"
@@ -30,7 +30,7 @@ appcompat = "1.7.0"
 ktor = "3.5.1"
 coroutines = "1.11.0"
 kotlinx-serialization-json = "1.11.0"
-coil3 = "3.0.4"
+coil3 = "3.5.0"
 firebase-bom = "33.3.0"
 firebase-analytics = "22.1.2"
 firebase-crashlytic = "19.3.0"
@@ -124,7 +124,7 @@ landscapist-coil3 = { module = "com.github.skydoves:landscapist-coil3", version.
 
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
 coil-compose-core = { module = "io.coil-kt.coil3:coil-compose-core", version.ref = "coil3" }
-coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version.ref = "coil3" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3" }
 coil-mp = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
 
 
