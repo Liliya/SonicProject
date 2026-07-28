@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalTime::class)
-
 package com.ato.helpers
 
 import kotlinx.datetime.TimeZone
@@ -7,7 +5,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 class DateFormatterTest {

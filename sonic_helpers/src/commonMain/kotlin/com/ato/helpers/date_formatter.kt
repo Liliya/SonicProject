@@ -1,10 +1,7 @@
-@file:OptIn(ExperimentalTime::class)
-
 package com.ato.helpers
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 fun formatDate(newDate: Long): String {
