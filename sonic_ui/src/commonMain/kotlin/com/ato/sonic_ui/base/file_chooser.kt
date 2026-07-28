@@ -16,18 +16,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import io.github.vinceglb.filekit.compose.PickerResultLauncher
-import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
-import io.github.vinceglb.filekit.core.PickerMode
-import io.github.vinceglb.filekit.core.PickerType
-import io.github.vinceglb.filekit.core.PlatformFile
-import io.github.vinceglb.filekit.core.extension
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.PickerResultLauncher
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.readBytes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.StringResource
-import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 object LoadOptions {
@@ -68,16 +66,14 @@ fun MyApp() {
 
 @Composable
 fun getLauncher(
-    title: StringResource,
     onStartLoading: () -> Unit = {},
     onLoaded: (String) -> Unit = {},
 ): PickerResultLauncher {
 
 
     return rememberFilePickerLauncher(
-        type = PickerType.File(listOf("txt")),
-        mode = PickerMode.Single,
-        title = stringResource(title),
+        type = FileKitType.File(setOf("txt")),
+        mode = FileKitMode.Single,
     ) { file: PlatformFile? ->
         onStartLoading()
 

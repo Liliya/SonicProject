@@ -9,7 +9,7 @@ calfFilePickerCoil = "0.5.1"
 chromecastSender = "0.29"
 decompose = "3.5.0"
 essenty = "2.5.0"
-filekit = "0.6.1"
+filekit = "0.14.2"
 firebase-kmp = "2.5.0"
 kmpauth = "2.3.1"
 koinAndroid = "3.5.6"
@@ -129,7 +129,7 @@ coil-mp = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
 
 
 # file picker
-filekit-compose = { module = "io.github.vinceglb:filekit-compose", version.ref = "filekit" }
+filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
 filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
 
 # Auth Google/ apple

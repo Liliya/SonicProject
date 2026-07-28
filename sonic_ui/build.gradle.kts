@@ -66,7 +66,7 @@ kotlin {
             implementation(libs.kmp.firebase.firestore)
 
             implementation(libs.filekit.core)
-            implementation(libs.filekit.compose)
+            implementation(libs.filekit.dialogs.compose)
             implementation(libs.okio)
 
             // images
