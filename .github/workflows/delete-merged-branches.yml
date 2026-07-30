@@ -1,0 +1,190 @@
+name: Delete merged branches
+
+# Branches pile up after their pull request lands, and once there are a dozen of
+# them nobody can tell which still hold work. Two jobs here, aimed at the two
+# halves of that problem:
+#
+#   - delete-head-branch removes the branch a pull request came from, the moment
+#     that pull request is merged. GitHub has a built-in setting for exactly
+#     this — Settings → General → "Automatically delete head branches" — and
+#     that checkbox needs no workflow at all. This job does the same thing in a
+#     form the repository can see and review, and it carries the archive/ guard
+#     described below. Turning the setting on as well is harmless: whichever
+#     acts first wins, and this job exits quietly when the branch is gone.
+#
+#   - sweep is the part the setting cannot do. It removes branches that were
+#     merged before any of this existed. Run it by hand from the Actions tab.
+#     It defaults to a dry run, so the first run only reports what it would do.
+#
+# Neither job touches the default branch, a protected branch, a branch that
+# still has an open pull request, or anything under archive/ — that namespace is
+# where retired history is parked deliberately, and it is usually *not* merged
+# into the default branch, which is the whole reason it is kept.
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List the branches instead of deleting them
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  delete-head-branch:
+    name: Delete the branch of a merged pull request
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Delete it
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          # Null when the pull request came from a fork that has since been
+          # deleted, hence the fallback to an empty string.
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || '' }}
+        run: |
+          set -euo pipefail
+
+          if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            echo "The branch lives in ${HEAD_REPO:-another repository}, not here. Nothing to delete."
+            exit 0
+          fi
+
+          default="$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)"
+          if [ "$BRANCH" = "$default" ]; then
+            echo "::warning::$BRANCH is the default branch. Not deleting it."
+            exit 0
+          fi
+
+          case "$BRANCH" in
+            archive/*)
+              echo "$BRANCH is in the archive/ namespace, which this workflow never deletes."
+              exit 0
+              ;;
+          esac
+
+          protected="$(gh api "repos/$GITHUB_REPOSITORY/branches/$BRANCH" --jq .protected 2>/dev/null || echo missing)"
+          if [ "$protected" = "missing" ]; then
+            echo "$BRANCH is already gone — the repository setting probably got there first."
+            exit 0
+          fi
+          if [ "$protected" = "true" ]; then
+            echo "::warning::$BRANCH is protected. Not deleting it."
+            exit 0
+          fi
+
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH"
+          echo "Deleted $BRANCH."
+          echo "Deleted \`$BRANCH\` after #${{ github.event.pull_request.number }} merged." >> "$GITHUB_STEP_SUMMARY"
+
+  sweep:
+    name: Sweep branches already merged into the default branch
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: sweep-merged-branches
+      cancel-in-progress: false
+
+    steps:
+      # Full history: the sweep decides what is merged with merge-base, which
+      # needs the real commit graph rather than a shallow slice of it. No
+      # submodules — this job only reads refs of this repository.
+      - name: Check out the full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find and remove merged branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          default="$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)"
+          echo "Default branch: $default"
+          echo "Dry run: $DRY_RUN"
+          echo
+
+          git fetch --quiet --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          # A branch with an open pull request is live work no matter what the
+          # commit graph says, so it is never a candidate.
+          open_prs="$(gh pr list --state open --limit 200 --json headRefName --jq '.[].headRefName' | sort -u)"
+
+          went=()
+          stayed=()
+
+          while IFS= read -r branch; do
+            if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+              continue
+            fi
+
+            if [ "$branch" = "$default" ]; then
+              stayed+=("$branch — the default branch")
+              continue
+            fi
+
+            case "$branch" in
+              archive/*)
+                stayed+=("$branch — archive/ namespace")
+                continue
+                ;;
+            esac
+
+            if [ -n "$open_prs" ] && grep -qxF "$branch" <<<"$open_prs"; then
+              stayed+=("$branch — has an open pull request")
+              continue
+            fi
+
+            protected="$(gh api "repos/$GITHUB_REPOSITORY/branches/$branch" --jq .protected 2>/dev/null || echo false)"
+            if [ "$protected" = "true" ]; then
+              stayed+=("$branch — protected")
+              continue
+            fi
+
+            if ! git merge-base --is-ancestor "origin/$branch" "origin/$default"; then
+              stayed+=("$branch — not merged into $default")
+              continue
+            fi
+
+            if [ "$DRY_RUN" = "true" ]; then
+              went+=("$branch — would be deleted")
+            else
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+              went+=("$branch — deleted")
+            fi
+          done < <(git for-each-ref --format='%(refname:short)' refs/remotes/origin | sed 's|^origin/||')
+
+          {
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "### Dry run — nothing was deleted"
+              echo
+              echo "Run this workflow again with **List the branches instead of deleting them** unchecked to actually remove them."
+            else
+              echo "### Swept ${#went[@]} branch(es)"
+            fi
+            echo
+            if [ "${#went[@]}" -gt 0 ]; then
+              printf '%s\n' "${went[@]}" | sed 's/^/- /'
+            else
+              echo "- nothing matched"
+            fi
+            echo
+            echo "<details><summary>Kept ${#stayed[@]} branch(es)</summary>"
+            echo
+            printf '%s\n' "${stayed[@]}" | sed 's/^/- /'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          printf '%s\n' "${went[@]}"
