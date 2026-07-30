@@ -24,7 +24,14 @@ fun CircularIcon(
     iconSize: Dp = 20.dp,
     /** Не меньше 48dp: это и область нажатия. */
     circleSize: Dp = 48.dp,
-    backgroundColor: Color = Color.Transparent, // убираем фон
+    /**
+     * Кружок под иконкой. По умолчанию прозрачный — иконка на однотонной
+     * поверхности в подложке не нуждается. Задавать его нужно там, где под
+     * кнопкой может оказаться что угодно: фотография, градиент, чужая
+     * картинка. Тогда [iconTint] берут контрастным именно к нему, и читаемость
+     * перестаёт зависеть от того, что там внизу.
+     */
+    backgroundColor: Color = Color.Transparent,
     iconTint: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
@@ -32,13 +39,14 @@ fun CircularIcon(
 ) {
     Box(
         modifier = modifier
+            .size(circleSize)
             .clip(CircleShape)
+            .background(backgroundColor)
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() },
                 onClick = onClick
-            )
-            .size(circleSize),
+            ),
         contentAlignment = Alignment.Center
     ) {
         Icon(
