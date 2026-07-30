@@ -40,6 +40,10 @@ fun DisplaySections(
     state: UiSections,
     onSelected: (Section) -> Unit,
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    selectedColor: Color = MaterialTheme.colorScheme.primary,
+    selectedTextColor: Color = MaterialTheme.colorScheme.onPrimary,
+    unselectedTextColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     Surface(
         modifier = modifier
@@ -49,7 +53,7 @@ fun DisplaySections(
     ) {
         Row(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(containerColor)
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
@@ -60,7 +64,7 @@ fun DisplaySections(
                     modifier = Modifier
                         .background(
                             if (item.isSelected) {
-                                MaterialTheme.colorScheme.primary
+                                selectedColor
                             } else {
                                 Color.Transparent
                             },
@@ -73,9 +77,9 @@ fun DisplaySections(
                             interactionSource = remember { MutableInteractionSource() }
                         ) { onSelected(item) },
                     color = if (item.isSelected) {
-                        MaterialTheme.colorScheme.onPrimary
+                        selectedTextColor
                     } else {
-                        MaterialTheme.colorScheme.primary
+                        unselectedTextColor
                     },
                     textAlign = TextAlign.Center,
                     fontSize = 14.sp
