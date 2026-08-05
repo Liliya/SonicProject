@@ -26,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 object LoadOptions {
@@ -87,7 +88,11 @@ fun readFile(file: PlatformFile?, onLoaded: (String) -> Unit) {
             val fileBytes = file?.readBytes()
             val fileContent = fileBytes?.decodeToString()?: "can't parse file"
 
-            onLoaded(fileContent)
+            // Читать файл на IO правильно, а вот отдавать результат — нет:
+            // `onLoaded` почти всегда пишет в состояние экрана.
+            withContext(Dispatchers.Main) {
+                onLoaded(fileContent)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
