@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,17 +23,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
+/**
+ * Переключатель на несколько разделов внутри экрана.
+ *
+ * Раньше выбранный пункт красился в `surface` и «выбивался» из дорожки
+ * blend-режимом `SrcOut`. В тёмной теме `surface` — почти чёрный, а дорожка была
+ * `primaryContainer`, то есть зелёной: выбранный раздел выглядел дырой, а
+ * невыбранный — залитой кнопкой, и глаз читал активным не тот пункт.
+ *
+ * Теперь никаких вычитаний: дорожка нейтральная, выбранный пункт — плашка
+ * `secondaryContainer`, как у `SegmentedButton` в Material 3. Работает в обеих
+ * темах, потому что обе роли берутся из схемы парой со своим `on…`.
+ */
 @Composable
 fun TextSwitch(
     modifier: Modifier = Modifier,
@@ -42,99 +51,72 @@ fun TextSwitch(
     items: List<String>,
     onSelectionChange: (Int) -> Unit
 ) {
-    val selectedItemColor = MaterialTheme.colorScheme.surface
-    val selectedItemTextColor = MaterialTheme.colorScheme.primary
-    val notSelectedItemTextColor = MaterialTheme.colorScheme.onPrimaryContainer
-    val backgroundColor = MaterialTheme.colorScheme.primaryContainer
-    val borderSize = 2.dp
+    if (items.isEmpty()) return
+
+    val trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val selectedColor = MaterialTheme.colorScheme.secondaryContainer
+    val selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer
+    val idleTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val trackPadding = 4.dp
     val tabBarHeight = 48.dp
+    val shape = MaterialTheme.shapes.small
 
     BoxWithConstraints(
         modifier
             .height(tabBarHeight)
-            .clip(CircleShape)
-            .background(backgroundColor)
-            .padding(borderSize)
+            .clip(shape)
+            .background(trackColor)
+            .padding(trackPadding)
     ) {
-        if (items.isNotEmpty()) {
-            val maxWidth = this.maxWidth
-            val tabWidth = maxWidth / items.size
+        val tabWidth = this.maxWidth / items.size
 
-            val indicatorOffset by animateDpAsState(
-                targetValue = tabWidth * selectedIndex,
-                animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-                label = "indicator offset"
-            )
+        val indicatorOffset by animateDpAsState(
+            targetValue = tabWidth * selectedIndex,
+            animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+            label = "indicator offset"
+        )
 
-            // This is for shadow layer matching white background
-            Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffset)
-                    .shadow(1.dp, CircleShape)
-                    .width(tabWidth)
-                    .fillMaxHeight()
-            )
+        Box(
+            modifier = Modifier
+                .offset(x = indicatorOffset)
+                .width(tabWidth)
+                .fillMaxHeight()
+                .clip(shape)
+                .background(selectedColor)
+        )
 
+        Row(modifier = Modifier.fillMaxWidth()) {
+            items.forEachIndexed { index, text ->
+                val isSelected = index == selectedIndex
 
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .drawWithContent {
-                    // This is for setting black tex while drawing on white background
-                    val padding = 8.dp.toPx()
-                    drawRoundRect(
-                        topLeft = Offset(x = indicatorOffset.toPx() + padding, padding),
-                        size = Size(size.width / 2 - padding * 2, size.height - padding * 2),
-                        color = selectedItemTextColor,
-                        cornerRadius = CornerRadius(x = 50.dp.toPx(), y = 50.dp.toPx()),
+                Box(
+                    modifier = Modifier
+                        .width(tabWidth)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = { onSelectionChange(index) }
+                        )
+                        // Экранный диктор объявляет раздел и то, выбран ли он;
+                        // без этого оба пункта звучали одинаково.
+                        .clearAndSetSemantics {
+                            this.text = AnnotatedString(text)
+                            this.selected = isSelected
+                            this.role = Role.Tab
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isSelected) selectedTextColor else idleTextColor
                     )
-
-                    drawWithLayer {
-                        drawContent()
-
-                        // This is white top rounded rectangle
-                        drawRoundRect(
-                            topLeft = Offset(x = indicatorOffset.toPx(), 0f),
-                            size = Size(size.width / 2, size.height),
-                            color = selectedItemColor,
-                            cornerRadius = CornerRadius(x = 50.dp.toPx(), y = 50.dp.toPx()),
-                            blendMode = BlendMode.SrcOut
-                        )
-                    }
-                }
-            ) {
-                items.forEachIndexed { index, text ->
-                    Box(
-                        modifier = Modifier
-                            .width(tabWidth)
-                            .fillMaxHeight()
-                            .clickable(
-                                interactionSource = remember {
-                                    MutableInteractionSource()
-                                },
-                                indication = null,
-                                onClick = {
-                                    onSelectionChange(index)
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = text,
-                            fontSize = 20.sp,
-                            color = notSelectedItemTextColor
-                        )
-                    }
                 }
             }
         }
-    }
-}
-
-
-fun ContentDrawScope.drawWithLayer(block: ContentDrawScope.() -> Unit) {
-    with(drawContext.canvas.nativeCanvas) {
-        val checkPoint = saveLayer(null, null)
-        block()
-        restoreToCount(checkPoint)
     }
 }
