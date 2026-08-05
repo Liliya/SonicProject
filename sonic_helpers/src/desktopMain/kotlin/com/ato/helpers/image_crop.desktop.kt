@@ -70,7 +70,14 @@ private fun readImage(bytes: ByteArray): BufferedImage? = try {
     null
 }
 
-private fun BufferedImage.limitedTo(maxSide: Int): BufferedImage {
+/**
+ * Уменьшение до [maxSide] по большей стороне, с сохранением пропорций.
+ *
+ * `internal`, чтобы это проверялось тестом: сам [decodeImage] на JVM в unit-тесте
+ * не выполнить — `toComposeImageBitmap` тянет нативную библиотеку skiko, которой
+ * в тестовом classpath нет и которую незачем туда тащить ради одной функции.
+ */
+internal fun BufferedImage.limitedTo(maxSide: Int): BufferedImage {
     if (maxSide <= 0 || max(width, height) <= maxSide) return this
 
     val factor = maxSide.toFloat() / max(width, height)
