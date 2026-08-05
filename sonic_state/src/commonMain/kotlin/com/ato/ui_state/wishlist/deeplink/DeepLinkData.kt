@@ -20,7 +20,11 @@ data class DeepLinkData(
         const val WISHES: String = "wishes"
         const val ADD_WISH: String = "add_wish"
         const val SETTINGS: String = "settings"
-        const val EVENTS: String = "events"
+        const val GIFTING: String = "gifting"
+
+        // Вкладка «Дарю» раньше называлась событиями, и ссылки с сегментом
+        // `events` уже разошлись по рукам — они всё ещё должны открывать её.
+        const val LEGACY_GIFTING: String = "events"
 
         fun fromUrl(urlString: String): DeepLinkData? {
             return if (
