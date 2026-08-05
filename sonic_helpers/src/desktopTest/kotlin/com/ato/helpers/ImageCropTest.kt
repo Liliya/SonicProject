@@ -8,6 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
@@ -42,14 +43,35 @@ class ImageCropTest {
 
     private fun ByteArray.decoded(): BufferedImage = ImageIO.read(inputStream())
 
+    /**
+     * Уменьшение проверяется на [limitedTo], а не на `decodeImage` целиком.
+     *
+     * `decodeImage` на JVM заканчивается вызовом `toComposeImageBitmap`, а тот
+     * тянет нативную библиотеку skiko, которой в тестовом classpath нет —
+     * `Cannot find libskiko-linux-x64.so`. Добавлять её сюда ради одной проверки
+     * значило бы тащить десятки мегабайт нативных зависимостей в каждый прогон
+     * тестов. Так что декодирование на десктопе остаётся непроверенным, а
+     * проверяется то, что в нём можно посчитать неправильно.
+     */
     @Test
-    fun sizeIsReadWithoutDecodingTheWholeImage() {
-        assertEquals(ImagePixelSize(640, 480), imagePixelSize(quarters(640, 480)))
+    fun shrinkingKeepsTheProportions() {
+        val big = ImageIO.read(quarters(1600, 1200).inputStream())
+
+        val small = big.limitedTo(maxSide = 400)
+
+        assertEquals(400, small.width)
+        assertEquals(300, small.height)
+    }
+
+    @Test
+    fun anImageSmallerThanTheLimitIsLeftAlone() {
+        val small = ImageIO.read(quarters(320, 240).inputStream())
+
+        assertSame(small, small.limitedTo(maxSide = 2048))
     }
 
     @Test
     fun garbageIsNotAnImage() {
-        assertNull(imagePixelSize(byteArrayOf(1, 2, 3, 4)))
         assertNull(cropImageToSquare(byteArrayOf(1, 2, 3, 4), NormalizedCropRect.WHOLE, 64))
     }
 
@@ -112,6 +134,81 @@ class ImageCropTest {
         assertNotNull(cropped)
         assertEquals(200, cropped.decoded().width)
         assertEquals(200, cropped.decoded().height)
+    }
+
+    /**
+     * Что кружок показывал, то и должно вырезаться.
+     *
+     * Тесты выше проверяют размеры, а разъехаться может кадр: на телефоне
+     * дважды выходило, что подвинутое в кружке не совпадало с аватаркой. Здесь
+     * цепочка «геометрия → доли → пиксели» проверяется по содержимому — по
+     * тому, где оказалась граница цветных четвертей.
+     *
+     * Картинка нарочно горизонтальная: у неё есть свобода по горизонтали и нет
+     * по вертикали, так что перепутанные оси видно сразу.
+     */
+    @Test
+    fun theCropShowsTheSamePartOfTheImageTheViewportDid() {
+        val width = 1200
+        val height = 800
+        val viewport = 300f
+
+        // Ничего не двигали: в квадрат попадает середина по ширине, вся высота.
+        val rect = CropGeometry.cropRect(
+            imageWidth = width,
+            imageHeight = height,
+            viewportSide = viewport,
+            zoom = CropGeometry.MIN_ZOOM,
+            offset = CropGeometry.centeredOffset(width, height, viewport, CropGeometry.MIN_ZOOM),
+        )
+
+        val image = cropImageToSquare(quarters(width, height), rect, outputSizePx = 200)
+        assertNotNull(image)
+        val cropped = image.decoded()
+
+        // Середина горизонтальной картинки — это по-прежнему стык всех четырёх
+        // четвертей ровно в центре кадра.
+        assertQuarter(cropped, 50, 50, "red")
+        assertQuarter(cropped, 150, 50, "green")
+        assertQuarter(cropped, 50, 150, "blue")
+        assertQuarter(cropped, 150, 150, "white")
+    }
+
+    @Test
+    fun draggingRightBringsTheLeftOfTheImageIntoTheCrop() {
+        val width = 1200
+        val height = 800
+        val viewport = 300f
+        val centered = CropGeometry.centeredOffset(width, height, viewport, CropGeometry.MIN_ZOOM)
+
+        // Картинку потащили вправо — значит в кадр приезжает её левая часть, и
+        // граница четвертей уходит правее. Знак здесь и есть то, что ломается
+        // молча: тест поймает и перепутанное направление, и перепутанную ось.
+        val dragged = CropOffset(centered.x + 60f, centered.y)
+        val rect = CropGeometry.cropRect(width, height, viewport, CropGeometry.MIN_ZOOM, dragged)
+
+        val image = cropImageToSquare(quarters(width, height), rect, outputSizePx = 200)
+        assertNotNull(image)
+        val cropped = image.decoded()
+
+        // Без сдвига граница стоит на x = 100, со сдвигом — на 140.
+        assertQuarter(cropped, 120, 50, "red")
+        assertQuarter(cropped, 160, 50, "green")
+    }
+
+    private fun assertQuarter(image: BufferedImage, x: Int, y: Int, expected: String) {
+        val pixel = Color(image.getRGB(x, y))
+        val bright = 170
+        val dim = 90
+        val actual = when {
+            pixel.red > bright && pixel.green > bright && pixel.blue > bright -> "white"
+            pixel.red > bright && pixel.green < dim && pixel.blue < dim -> "red"
+            pixel.green > bright && pixel.red < dim && pixel.blue < dim -> "green"
+            pixel.blue > bright && pixel.red < dim && pixel.green < dim -> "blue"
+            else -> "$pixel"
+        }
+
+        assertEquals(expected, actual, "в точке ($x, $y)")
     }
 
     @Test
