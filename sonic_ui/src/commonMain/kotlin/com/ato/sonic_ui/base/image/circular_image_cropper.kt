@@ -1,5 +1,6 @@
 package com.ato.sonic_ui.base.image
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -12,9 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
@@ -27,17 +26,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.ato.helpers.CropGeometry
 import com.ato.helpers.CropOffset
 import com.ato.helpers.NormalizedCropRect
+import com.ato.helpers.decodeImage
 import com.ato.helpers.getAsyncImageLoader
 import com.ato.helpers.getPlatformContext
-import com.ato.helpers.imagePixelSize
+import com.ato.helpers.toPixelCrop
 import com.ato.sonic_ui.base.button.DisplayButton
 import com.ato.sonic_ui.base.text.DisplayText
 import com.ato.ui_state.base.button.UiButton
@@ -52,28 +54,27 @@ import kotlin.math.roundToInt
  *
  * До этого выбранное фото уходило в загрузку как есть, а по кругу его резал
  * `ContentScale.Crop` — по центру и без спроса. Для фотографии, где человек
- * стоит сбоку, это значило «лица не будет», и сделать с этим было нечего.
+ * стоит сбоку, это значило «лица не будет».
  *
- * Арифметика живёт в [CropGeometry] и покрыта тестами; здесь только жест и то,
- * что видно.
+ * **Кружок рисует картинку сам, через [Canvas], и берёт для этого ровно тот
+ * прямоугольник, который уйдёт в обрезку.** Это не педантизм, это следствие
+ * двух заходов, в которых кадр расходился с результатом. Сначала кадр задавался
+ * размером и сдвигом composable-а с картинкой, и раскладка жила по своим
+ * правилам: `Modifier.size` подрезался ограничениями родителя, потом сторона
+ * круга приезжала на кадр позже, чем считались размеры, потом сдвиг перестал
+ * доезжать до отрисовки вовсе — на телефоне фотография просто не двигалась, а
+ * обрезка накопленный сдвиг честно применяла. Каждый раз «должно быть
+ * эквивалентно» оказывалось неэквивалентно.
  *
- * Две вещи в раскладке сделаны не самым коротким способом, и обе — потому что
- * короткий давал чёрный круг вместо фотографии:
- *
- *  * сторона круга берётся из [BoxWithConstraints], то есть известна прямо во
- *    время композиции. Раньше она приезжала из `onSizeChanged` — уже после
- *    измерения, — и первый кадр считался от нуля;
- *  * фотографии задан [requiredSize], а не `size`. Вся модель кадрирования
- *    стоит на том, что картинка **больше** круга и её видимую часть выбирает
- *    сдвиг. `size` подрезается ограничениями родителя до размера этого самого
- *    круга, после чего отрицательный сдвиг уносит картинку за границы и в
- *    кадре остаётся подложка. `requiredSize` ограничения игнорирует.
+ * Теперь эквивалентности не требуется: и превью, и обрезка получают один и тот
+ * же [NormalizedCropRect] и переводят его в пиксели одной и той же функцией
+ * ([toPixelCrop]). Разойтись им больше нечем.
  *
  * @param onConfirm отдаёт выбранный кадр долями от размеров картинки — резать
  *   байты будет вызывающий, у него для этого есть корутина. `null` означает
- *   «кадрировать не удалось, бери файл как есть»: размеры картинки неизвестны,
- *   кружок всё это время показывал её середину силами `ContentScale.Crop`, и
- *   любой посчитанный кадр разошёлся бы с тем, что человек видел.
+ *   «раскодировать не удалось, бери файл как есть»: кружок в этом случае
+ *   показывал середину силами `ContentScale.Crop`, и любой посчитанный кадр
+ *   разошёлся бы с тем, что человек видел.
  */
 @Composable
 fun CircularImageCropper(
@@ -85,7 +86,7 @@ fun CircularImageCropper(
     modifier: Modifier = Modifier,
     hint: UiSimpleText? = null,
 ) {
-    val size = remember(image) { imagePixelSize(image) }
+    val bitmap = remember(image) { decodeImage(image) }
     val density = LocalDensity.current
 
     BoxWithConstraints(
@@ -97,15 +98,16 @@ fun CircularImageCropper(
             .padding(16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        // Доля высоты, а не вся: под кругом ещё подсказка и две кнопки, и на
-        // невысоком экране они должны остаться на нём.
+        // Сторона круга известна прямо здесь, во время композиции. Когда она
+        // приезжала из onSizeChanged, то есть после измерения, первый кадр
+        // считался от нуля.
         val viewportDp = minOf(maxWidth, maxHeight * 0.6f, 320.dp)
         val viewportPx = with(density) { viewportDp.toPx() }
 
         var zoom by remember(image) { mutableStateOf(CropGeometry.MIN_ZOOM) }
         var offset by remember(image, viewportPx) {
             mutableStateOf(
-                size?.let {
+                bitmap?.let {
                     CropGeometry.centeredOffset(
                         imageWidth = it.width,
                         imageHeight = it.height,
@@ -113,6 +115,17 @@ fun CircularImageCropper(
                         zoom = CropGeometry.MIN_ZOOM,
                     )
                 } ?: CropOffset(0f, 0f)
+            )
+        }
+
+        // Один прямоугольник на превью и на обрезку.
+        val rect = bitmap?.let {
+            CropGeometry.cropRect(
+                imageWidth = it.width,
+                imageHeight = it.height,
+                viewportSide = viewportPx,
+                zoom = zoom,
+                offset = offset,
             )
         }
 
@@ -135,9 +148,10 @@ fun CircularImageCropper(
                     .clip(CircleShape)
                     .background(Color.Black)
             ) {
-                if (size == null) {
-                    // Формат, который платформа не смогла раскодировать. Кадрировать
-                    // нечего, но и терять выбранный файл незачем — уйдёт целиком.
+                if (bitmap == null || rect == null) {
+                    // Формат, который платформа не смогла раскодировать.
+                    // Кадрировать нечего, но и терять выбранный файл незачем —
+                    // уйдёт целиком.
                     CoilImage(
                         imageLoader = { getAsyncImageLoader(getPlatformContext()) },
                         imageModel = { image },
@@ -148,29 +162,9 @@ fun CircularImageCropper(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    CoilImage(
-                        imageLoader = { getAsyncImageLoader(getPlatformContext()) },
-                        imageModel = { image },
-                        // Размер уже посчитан из пропорций картинки, так что
-                        // подгонять её ещё и здесь не надо — отсюда FillBounds.
-                        imageOptions = ImageOptions(contentScale = ContentScale.FillBounds),
-                        modifier = Modifier
-                            .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
-                            .requiredSize(
-                                width = with(density) {
-                                    CropGeometry.displayWidth(
-                                        size.width, size.height, viewportPx, zoom
-                                    ).toDp()
-                                },
-                                height = with(density) {
-                                    CropGeometry.displayHeight(
-                                        size.width, size.height, viewportPx, zoom
-                                    ).toDp()
-                                },
-                            ),
-                    )
+                    val crop = rect.toPixelCrop(width = bitmap.width, height = bitmap.height)
 
-                    Box(
+                    Canvas(
                         modifier = Modifier
                             .fillMaxSize()
                             .pointerInput(image, viewportPx) {
@@ -183,8 +177,8 @@ fun CircularImageCropper(
                                     val center = viewportPx / 2f
 
                                     offset = CropGeometry.clampOffset(
-                                        imageWidth = size.width,
-                                        imageHeight = size.height,
+                                        imageWidth = bitmap.width,
+                                        imageHeight = bitmap.height,
                                         viewportSide = viewportPx,
                                         zoom = next,
                                         offset = CropOffset(
@@ -195,7 +189,19 @@ fun CircularImageCropper(
                                     zoom = next
                                 }
                             }
-                    )
+                    ) {
+                        drawImage(
+                            image = bitmap,
+                            srcOffset = IntOffset(crop.left, crop.top),
+                            srcSize = IntSize(crop.side, crop.side),
+                            dstOffset = IntOffset.Zero,
+                            dstSize = IntSize(
+                                size.width.roundToInt(),
+                                size.height.roundToInt(),
+                            ),
+                            filterQuality = FilterQuality.Medium,
+                        )
+                    }
                 }
 
                 // Обводка последней и поверх картинки. Обычный Box без
@@ -226,19 +232,7 @@ fun CircularImageCropper(
                 )
                 DisplayButton(
                     state = confirm,
-                    onClick = {
-                        onConfirm(
-                            size?.let {
-                                CropGeometry.cropRect(
-                                    imageWidth = it.width,
-                                    imageHeight = it.height,
-                                    viewportSide = viewportPx,
-                                    zoom = zoom,
-                                    offset = offset,
-                                )
-                            }
-                        )
-                    },
+                    onClick = { onConfirm(rect) },
                     modifier = Modifier.weight(1f),
                 )
             }

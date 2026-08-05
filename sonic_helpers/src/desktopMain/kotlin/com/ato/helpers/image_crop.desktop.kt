@@ -1,11 +1,13 @@
 package com.ato.helpers
 
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
-import kotlin.math.min
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
@@ -22,22 +24,10 @@ import kotlin.math.roundToInt
  * оживёт, повёрнутый снимок обрежется не по тому кадру — начинать надо будет
  * отсюда.
  */
-actual fun imagePixelSize(bytes: ByteArray): ImagePixelSize? {
-    // `createImageInputStream` объявлен в Java и вернуть null может — Kotlin про
-    // это не знает и молча пропустил бы `.use` до NPE.
-    val stream = ImageIO.createImageInputStream(ByteArrayInputStream(bytes)) ?: return null
+actual fun decodeImage(bytes: ByteArray, maxSide: Int): ImageBitmap? {
+    val source = readImage(bytes) ?: return null
 
-    stream.use {
-        val reader = ImageIO.getImageReaders(stream).asSequence().firstOrNull() ?: return null
-        return try {
-            reader.input = stream
-            ImagePixelSize(width = reader.getWidth(0), height = reader.getHeight(0))
-        } catch (error: Exception) {
-            null
-        } finally {
-            reader.dispose()
-        }
-    }
+    return source.limitedTo(maxSide).toComposeImageBitmap()
 }
 
 actual fun cropImageToSquare(
@@ -45,20 +35,10 @@ actual fun cropImageToSquare(
     rect: NormalizedCropRect,
     outputSizePx: Int,
 ): ByteArray? {
-    val source = try {
-        ImageIO.read(ByteArrayInputStream(bytes))
-    } catch (error: Exception) {
-        null
-    } ?: return null
+    val source = readImage(bytes) ?: return null
 
-    val left = (rect.left * source.width).roundToInt().coerceIn(0, source.width - 1)
-    val top = (rect.top * source.height).roundToInt().coerceIn(0, source.height - 1)
-    val side = min(
-        (rect.right * source.width).roundToInt() - left,
-        (rect.bottom * source.height).roundToInt() - top,
-    )
-        .coerceAtLeast(1)
-        .coerceAtMost(min(source.width - left, source.height - top))
+    val crop = rect.toPixelCrop(width = source.width, height = source.height)
+    if (crop.side <= 0) return null
 
     // TYPE_INT_RGB, а не ARGB: JPEG прозрачность не умеет, и картинка с
     // альфа-каналом записалась бы с перевранными цветами.
@@ -70,7 +50,7 @@ actual fun cropImageToSquare(
             RenderingHints.VALUE_INTERPOLATION_BILINEAR,
         )
         graphics.drawImage(
-            source.getSubimage(left, top, side, side),
+            source.getSubimage(crop.left, crop.top, crop.side, crop.side),
             0, 0, outputSizePx, outputSizePx,
             null,
         )
@@ -82,4 +62,32 @@ actual fun cropImageToSquare(
         if (!ImageIO.write(output, "jpg", stream)) return null
         stream.toByteArray()
     }
+}
+
+private fun readImage(bytes: ByteArray): BufferedImage? = try {
+    ImageIO.read(ByteArrayInputStream(bytes))
+} catch (error: Exception) {
+    null
+}
+
+private fun BufferedImage.limitedTo(maxSide: Int): BufferedImage {
+    if (maxSide <= 0 || max(width, height) <= maxSide) return this
+
+    val factor = maxSide.toFloat() / max(width, height)
+    val target = BufferedImage(
+        (width * factor).roundToInt().coerceAtLeast(1),
+        (height * factor).roundToInt().coerceAtLeast(1),
+        BufferedImage.TYPE_INT_RGB,
+    )
+    val graphics = target.createGraphics()
+    try {
+        graphics.setRenderingHint(
+            RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_BILINEAR,
+        )
+        graphics.drawImage(this, 0, 0, target.width, target.height, null)
+    } finally {
+        graphics.dispose()
+    }
+    return target
 }

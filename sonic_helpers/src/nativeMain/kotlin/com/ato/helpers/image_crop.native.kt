@@ -1,11 +1,14 @@
 package com.ato.helpers
 
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.allocArrayOf
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.useContents
+import org.jetbrains.skia.Image
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.NSData
@@ -16,7 +19,8 @@ import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageJPEGRepresentation
 import platform.posix.memcpy
-import kotlin.math.roundToInt
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * iOS-реализация через UIKit.
@@ -26,22 +30,37 @@ import kotlin.math.roundToInt
  * отдельным полем `imageOrientation`. `CGImage` про это поле не знает и отдал
  * бы кадр из повёрнутой картинки — то есть не тот, который человек только что
  * выбрал пальцем. `drawInRect` ориентацию применяет сам.
+ *
+ * По той же причине [decodeImage] сначала перерисовывает картинку через UIKit и
+ * только потом отдаёт её в Skia: превью и обрезка обязаны смотреть на одни и те
+ * же пиксели.
+ *
+ * **Ни одна строка здесь ни разу не собиралась:** macOS-раннера у проекта нет
+ * (см. `docs/roadmap.md`). Это самое непроверенное место в обеих правках.
  */
 @OptIn(ExperimentalForeignApi::class)
-actual fun imagePixelSize(bytes: ByteArray): ImagePixelSize? {
+actual fun decodeImage(bytes: ByteArray, maxSide: Int): ImageBitmap? {
     val image = UIImage.imageWithData(bytes.toNSData()) ?: return null
 
-    return image.size.useContents {
-        val scale = image.scale
-        val pixelWidth = (width * scale).roundToInt()
-        val pixelHeight = (height * scale).roundToInt()
+    val (widthPoints, heightPoints) = image.size.useContents { width to height }
+    if (widthPoints <= 0.0 || heightPoints <= 0.0) return null
 
-        if (pixelWidth <= 0 || pixelHeight <= 0) {
-            null
-        } else {
-            ImagePixelSize(width = pixelWidth, height = pixelHeight)
-        }
+    val factor = when {
+        maxSide <= 0 -> 1.0
+        else -> min(maxSide.toDouble() / max(widthPoints, heightPoints), 1.0)
     }
+    val targetWidth = max(widthPoints * factor, 1.0)
+    val targetHeight = max(heightPoints * factor, 1.0)
+
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(targetWidth, targetHeight), true, 1.0)
+    image.drawInRect(CGRectMake(0.0, 0.0, targetWidth, targetHeight))
+    val upright = UIGraphicsGetImageFromCurrentImageContext()
+    UIGraphicsEndImageContext()
+
+    val encoded = upright?.let { UIImageJPEGRepresentation(it, JPEG_QUALITY) }?.toByteArray()
+        ?: return null
+
+    return Image.makeFromEncoded(encoded).toComposeImageBitmap()
 }
 
 @OptIn(ExperimentalForeignApi::class)
@@ -54,8 +73,7 @@ actual fun cropImageToSquare(
 
     // Размер в точках: доли из [NormalizedCropRect] от единиц не зависят,
     // поэтому переводить в пиксели тут незачем.
-    val sizeInPoints = image.size.useContents { width to height }
-    val (widthPoints, heightPoints) = sizeInPoints
+    val (widthPoints, heightPoints) = image.size.useContents { width to height }
     if (widthPoints <= 0.0 || heightPoints <= 0.0) return null
 
     val cropWidth = (rect.right - rect.left) * widthPoints

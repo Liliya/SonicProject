@@ -43,13 +43,26 @@ class ImageCropTest {
     private fun ByteArray.decoded(): BufferedImage = ImageIO.read(inputStream())
 
     @Test
-    fun sizeIsReadWithoutDecodingTheWholeImage() {
-        assertEquals(ImagePixelSize(640, 480), imagePixelSize(quarters(640, 480)))
+    fun decodingKeepsTheProportionsAndRespectsTheSizeLimit() {
+        val decoded = decodeImage(quarters(1600, 1200), maxSide = 400)
+
+        assertNotNull(decoded)
+        assertEquals(400, decoded.width)
+        assertEquals(300, decoded.height)
+    }
+
+    @Test
+    fun anImageSmallerThanTheLimitIsLeftAlone() {
+        val decoded = decodeImage(quarters(320, 240), maxSide = 2048)
+
+        assertNotNull(decoded)
+        assertEquals(320, decoded.width)
+        assertEquals(240, decoded.height)
     }
 
     @Test
     fun garbageIsNotAnImage() {
-        assertNull(imagePixelSize(byteArrayOf(1, 2, 3, 4)))
+        assertNull(decodeImage(byteArrayOf(1, 2, 3, 4)))
         assertNull(cropImageToSquare(byteArrayOf(1, 2, 3, 4), NormalizedCropRect.WHOLE, 64))
     }
 
