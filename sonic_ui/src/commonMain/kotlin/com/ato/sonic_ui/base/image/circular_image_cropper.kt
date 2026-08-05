@@ -70,14 +70,17 @@ import kotlin.math.roundToInt
  *    кадре остаётся подложка. `requiredSize` ограничения игнорирует.
  *
  * @param onConfirm отдаёт выбранный кадр долями от размеров картинки — резать
- *   байты будет вызывающий, у него для этого есть корутина.
+ *   байты будет вызывающий, у него для этого есть корутина. `null` означает
+ *   «кадрировать не удалось, бери файл как есть»: размеры картинки неизвестны,
+ *   кружок всё это время показывал её середину силами `ContentScale.Crop`, и
+ *   любой посчитанный кадр разошёлся бы с тем, что человек видел.
  */
 @Composable
 fun CircularImageCropper(
     image: ByteArray,
     confirm: UiButton,
     cancel: UiButton,
-    onConfirm: (NormalizedCropRect) -> Unit,
+    onConfirm: (NormalizedCropRect?) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
     hint: UiSimpleText? = null,
@@ -225,12 +228,10 @@ fun CircularImageCropper(
                     state = confirm,
                     onClick = {
                         onConfirm(
-                            if (size == null) {
-                                NormalizedCropRect.WHOLE
-                            } else {
+                            size?.let {
                                 CropGeometry.cropRect(
-                                    imageWidth = size.width,
-                                    imageHeight = size.height,
+                                    imageWidth = it.width,
+                                    imageHeight = it.height,
                                     viewportSide = viewportPx,
                                     zoom = zoom,
                                     offset = offset,
