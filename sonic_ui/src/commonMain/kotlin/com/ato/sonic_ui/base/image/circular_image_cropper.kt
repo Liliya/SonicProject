@@ -5,21 +5,20 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -59,6 +57,18 @@ import kotlin.math.roundToInt
  * Арифметика живёт в [CropGeometry] и покрыта тестами; здесь только жест и то,
  * что видно.
  *
+ * Две вещи в раскладке сделаны не самым коротким способом, и обе — потому что
+ * короткий давал чёрный круг вместо фотографии:
+ *
+ *  * сторона круга берётся из [BoxWithConstraints], то есть известна прямо во
+ *    время композиции. Раньше она приезжала из `onSizeChanged` — уже после
+ *    измерения, — и первый кадр считался от нуля;
+ *  * фотографии задан [requiredSize], а не `size`. Вся модель кадрирования
+ *    стоит на том, что картинка **больше** круга и её видимую часть выбирает
+ *    сдвиг. `size` подрезается ограничениями родителя до размера этого самого
+ *    круга, после чего отрицательный сдвиг уносит картинку за границы и в
+ *    кадре остаётся подложка. `requiredSize` ограничения игнорирует.
+ *
  * @param onConfirm отдаёт выбранный кадр долями от размеров картинки — резать
  *   байты будет вызывающий, у него для этого есть корутина.
  */
@@ -75,51 +85,50 @@ fun CircularImageCropper(
     val size = remember(image) { imagePixelSize(image) }
     val density = LocalDensity.current
 
-    var viewportPx by remember { mutableStateOf(0f) }
-    var zoom by remember(image) { mutableStateOf(CropGeometry.MIN_ZOOM) }
-    var offset by remember(image) { mutableStateOf(CropOffset(0f, 0f)) }
-
-    // Ставим картинку по центру, как только стал известен размер круга.
-    // В самой композиции это писать нельзя — состояние, записанное во время
-    // отрисовки, уводит Compose в бесконечную перекомпоновку.
-    LaunchedEffect(image, size, viewportPx) {
-        if (size != null && viewportPx > 0f) {
-            zoom = CropGeometry.MIN_ZOOM
-            offset = CropGeometry.centeredOffset(
-                imageWidth = size.width,
-                imageHeight = size.height,
-                viewportSide = viewportPx,
-                zoom = CropGeometry.MIN_ZOOM,
-            )
-        }
-    }
-
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             // Не тема: подложка должна быть тёмной в обеих темах, потому что
             // поверх неё лежит чужая фотография, а не наш интерфейс.
             .background(Color.Black.copy(alpha = 0.92f))
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        contentAlignment = Alignment.Center,
     ) {
-        hint?.let {
-            DisplayText(
-                state = it,
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth(),
+        // Доля высоты, а не вся: под кругом ещё подсказка и две кнопки, и на
+        // невысоком экране они должны остаться на нём.
+        val viewportDp = minOf(maxWidth, maxHeight * 0.6f, 320.dp)
+        val viewportPx = with(density) { viewportDp.toPx() }
+
+        var zoom by remember(image) { mutableStateOf(CropGeometry.MIN_ZOOM) }
+        var offset by remember(image, viewportPx) {
+            mutableStateOf(
+                size?.let {
+                    CropGeometry.centeredOffset(
+                        imageWidth = it.width,
+                        imageHeight = it.height,
+                        viewportSide = viewportPx,
+                        zoom = CropGeometry.MIN_ZOOM,
+                    )
+                } ?: CropOffset(0f, 0f)
             )
-            Spacer(Modifier.height(16.dp))
         }
 
-        Box(contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            hint?.let {
+                DisplayText(
+                    state = it,
+                    color = Color.White,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+
             Box(
                 modifier = Modifier
-                    .widthIn(max = 320.dp)
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .onSizeChanged { viewportPx = it.width.toFloat() }
+                    .size(viewportDp)
                     .clip(CircleShape)
                     .background(Color.Black)
             ) {
@@ -136,11 +145,6 @@ fun CircularImageCropper(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    val displayWidth =
-                        CropGeometry.displayWidth(size.width, size.height, viewportPx, zoom)
-                    val displayHeight =
-                        CropGeometry.displayHeight(size.width, size.height, viewportPx, zoom)
-
                     CoilImage(
                         imageLoader = { getAsyncImageLoader(getPlatformContext()) },
                         imageModel = { image },
@@ -149,9 +153,17 @@ fun CircularImageCropper(
                         imageOptions = ImageOptions(contentScale = ContentScale.FillBounds),
                         modifier = Modifier
                             .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
-                            .size(
-                                width = with(density) { displayWidth.toDp() },
-                                height = with(density) { displayHeight.toDp() },
+                            .requiredSize(
+                                width = with(density) {
+                                    CropGeometry.displayWidth(
+                                        size.width, size.height, viewportPx, zoom
+                                    ).toDp()
+                                },
+                                height = with(density) {
+                                    CropGeometry.displayHeight(
+                                        size.width, size.height, viewportPx, zoom
+                                    ).toDp()
+                                },
                             ),
                     )
 
@@ -182,52 +194,53 @@ fun CircularImageCropper(
                             }
                     )
                 }
+
+                // Обводка последней и поверх картинки. Обычный Box без
+                // обработчика жестов события не перехватывает, так что тащить
+                // фото она не мешает.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .border(
+                            width = 2.dp,
+                            color = Color.White.copy(alpha = 0.6f),
+                            shape = CircleShape,
+                        )
+                )
             }
 
-            // Обводка отдельным слоем поверх: на самом круге её закрыла бы
-            // картинка, которая лежит внутри него.
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .border(
-                        width = 2.dp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        shape = CircleShape,
-                    )
-            )
-        }
+            Spacer(Modifier.height(24.dp))
 
-        Spacer(Modifier.height(24.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            DisplayButton(
-                state = cancel,
-                onClick = onCancel,
-                colors = ButtonDefaults.filledTonalButtonColors(),
-                modifier = Modifier.weight(1f),
-            )
-            DisplayButton(
-                state = confirm,
-                onClick = {
-                    onConfirm(
-                        if (size == null || viewportPx <= 0f) {
-                            NormalizedCropRect.WHOLE
-                        } else {
-                            CropGeometry.cropRect(
-                                imageWidth = size.width,
-                                imageHeight = size.height,
-                                viewportSide = viewportPx,
-                                zoom = zoom,
-                                offset = offset,
-                            )
-                        }
-                    )
-                },
-                modifier = Modifier.weight(1f),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                DisplayButton(
+                    state = cancel,
+                    onClick = onCancel,
+                    colors = ButtonDefaults.filledTonalButtonColors(),
+                    modifier = Modifier.weight(1f),
+                )
+                DisplayButton(
+                    state = confirm,
+                    onClick = {
+                        onConfirm(
+                            if (size == null) {
+                                NormalizedCropRect.WHOLE
+                            } else {
+                                CropGeometry.cropRect(
+                                    imageWidth = size.width,
+                                    imageHeight = size.height,
+                                    viewportSide = viewportPx,
+                                    zoom = zoom,
+                                    offset = offset,
+                                )
+                            }
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
