@@ -55,17 +55,20 @@ fun PersonCard(
                         .padding(bottom = 8.dp)
                 )
             }
-            avaUrl?.let {
-                Box(
-                    modifier = Modifier.padding(8.dp).padding(end = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    DisplayImage(
-                        imagePikerState = UiImagePicker(avaUrl),
-                        size = 64f,
-                        onImageClicked = onClick ?: {}
-                    )
-                }
+            // Раньше кружок рисовался только под `avaUrl != null`, поэтому у
+            // людей без фотографии карточка была голой, а у остальных нет —
+            // и список ехал по вертикали. Со встроенным пресетом аватарка есть
+            // всегда, и ряд карточек наконец одной высоты.
+            Box(
+                modifier = Modifier.padding(8.dp).padding(end = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                DisplayImage(
+                    imagePikerState = UiImagePicker(avaUrl),
+                    size = 64f,
+                    avatarSeed = nick,
+                    onImageClicked = onClick ?: {}
+                )
             }
         }
     }

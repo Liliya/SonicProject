@@ -7,7 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -29,11 +29,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ato.helpers.getAsyncImageLoader
 import com.ato.helpers.getPlatformContext
+import com.ato.ui_state.base.image.AvatarPresets
 import com.ato.ui_state.base.image.UiImagePicker
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 
 
+/**
+ * @param avatarSeed см. [DisplayImage] — включает встроенные пресеты вместо
+ *   заглушки «+».
+ * @param showClear рисовать ли крестик. У аватарки удаление уехало в лист
+ *   действий, а два способа сделать одно и то же на одном экране только
+ *   путают; у картинки желания крестик остаётся единственным.
+ */
 @Composable
 fun DisplayImageWithCross(
     imagePikerState: UiImagePicker,
@@ -44,6 +52,9 @@ fun DisplayImageWithCross(
     shape: Shape = CircleShape,
     modifier: Modifier = Modifier,
     clearContentDescription: String? = null,
+    contentDescription: String? = null,
+    avatarSeed: String? = null,
+    showClear: Boolean = true,
     noImageHolder: @Composable BoxScope.() -> Unit = {
         Text(
             text = "+",
@@ -56,6 +67,12 @@ fun DisplayImageWithCross(
     }
 ) {
     val data = imagePikerState.imageFile ?: imagePikerState.imageUrl
+    val preset = if (imagePikerState.imageFile == null) {
+        AvatarPresets.resolve(imagePikerState.imageUrl, avatarSeed)
+    } else {
+        null
+    }
+
     Box(
         modifier = modifier
     ) {
@@ -75,11 +92,18 @@ fun DisplayImageWithCross(
                     onClick = onImageClicked
                 )
                 .align(Alignment.Center)
+                .avatarLabel(contentDescription)
         ) {
-            if (data == null) {
-                noImageHolder()
-            } else {
-                CoilImage(
+            when {
+                preset != null -> AvatarPresetImage(
+                    index = preset,
+                    shape = shape,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                data == null -> noImageHolder()
+
+                else -> CoilImage(
                     imageLoader = { getAsyncImageLoader(getPlatformContext()) },
                     modifier = Modifier
                         .clip(shape)
@@ -93,31 +117,38 @@ fun DisplayImageWithCross(
             }
         }
 
-        if (data != null) {
+        if (showClear && data != null) {
+            // Нажималось ровно по значку — 24dp, вдвое меньше минимума в 48dp,
+            // и это единственный способ убрать картинку. Сам значок остался
+            // прежнего размера, выросла только область.
             Box(
                 modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(48.dp)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
                         onClick = onClearClicked
-                    )
-                    .padding(4.dp)
-                    .size(24.dp)
-                    .align(Alignment.TopEnd)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.05f),
-                        shape = shape
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    modifier = Modifier.padding(2.dp),
-                    imageVector = Icons.Default.Close,
-                    contentDescription = clearContentDescription,
-                    tint = LocalContentColor.current.copy(alpha = 0.3f)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.05f),
+                            shape = shape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        modifier = Modifier.size(20.dp),
+                        imageVector = Icons.Default.Close,
+                        contentDescription = clearContentDescription,
+                        tint = LocalContentColor.current.copy(alpha = 0.3f)
+                    )
+                }
             }
         }
     }
 }
-
