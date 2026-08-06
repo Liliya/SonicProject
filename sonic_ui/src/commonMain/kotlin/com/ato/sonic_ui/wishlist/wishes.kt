@@ -15,7 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ato.sonic_ui.base.image.DisplayImage
@@ -31,27 +34,38 @@ import com.ato.ui_state.wishlist.WishlistWish
  * `Text` занимает строку, и под названием получалась дырка. На доске с одним
  * желанием экран выглядел недоделанным.
  *
- * Теперь миниатюра 48dp, описание рисуется только когда оно есть, и в тот же
- * вертикальный размер помещается вчетверо больше желаний.
+ * **Выполненное желание больше не подсвечивается.** Карточка заливалась
+ * `primary` с прозрачностью — тем же цветом, которым в этом интерфейсе
+ * выделяют важное и выбранное. Получалось наоборот: сделанное кричало громче
+ * несделанного, и на доске взгляд первым делом падал на то, чем заниматься уже
+ * не надо. Теперь выполненное приглушено — зачёркнутое название серым — и
+ * подписано словом.
+ *
+ * Одного зачёркивания мало: скринридер его не произносит, а на однострочном
+ * названии с многоточием оно ещё и мешает читать. Поэтому вместе с ним идут
+ * [completedLabel] на месте описания и `stateDescription` на карточке —
+ * состояние объявляется словами, а не только начертанием.
+ *
+ * @param completedLabel «Выполнено» на языке интерфейса. Приходит снаружи,
+ *   потому что строки живут в ресурсах приложения, а не библиотеки.
  */
 @Composable
 fun DisplayWish(
     wish: WishlistWish,
     onClick: (WishlistWish) -> Unit,
+    completedLabel: String,
     modifier: Modifier = Modifier,
 ) {
-    val cardColors = if (wish.isCompleted == true) {
-        CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        )
-    } else {
-        CardDefaults.cardColors()
-    }
+    val isCompleted = wish.isCompleted == true
 
     Card(
-        modifier = modifier,
+        modifier = if (isCompleted) {
+            modifier.semantics { stateDescription = completedLabel }
+        } else {
+            modifier
+        },
         shape = MaterialTheme.shapes.medium,
-        colors = cardColors,
+        colors = CardDefaults.cardColors(),
         onClick = remember(wish) { { onClick.invoke(wish) } },
     ) {
         Row(
@@ -76,21 +90,40 @@ fun DisplayWish(
                         text = name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
+                        color = if (isCompleted) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                        textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
 
-                // Пустое описание раньше всё равно занимало строку.
-                wish.description?.takeIf { it.isNotBlank() }?.let { description ->
+                if (isCompleted) {
+                    // Вместо описания, а не вдобавок к нему: у сделанного
+                    // желания «что это» уже не важно, важно «оно сделано», а
+                    // лишняя строка вернула бы список к прежней рыхлости.
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = description,
+                        text = completedLabel,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
+                } else {
+                    // Пустое описание раньше всё равно занимало строку.
+                    wish.description?.takeIf { it.isNotBlank() }?.let { description ->
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }

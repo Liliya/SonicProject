@@ -12,8 +12,23 @@ data class WishlistWish(
     var name: String? = null,
     var description: String? = "",
     var imageUrl: String? = null,
-//    @Serializable(with = TimestampSerializer::class)
-//    var creationDate: Timestamp? = null,
+    /**
+     * Когда желание завели и когда его в последний раз меняли — миллисекунды
+     * эпохи UTC.
+     *
+     * Числом, а не `dev.gitlive.firebase.firestore.Timestamp`: единственный
+     * сериализатор для него в этом проекте
+     * ([com.ato.ui_state.wishlist.CustomTimestampSerializer]) умеет работать
+     * только с Json-кодировщиком, а Firestore пишет своим — из-за этого поле
+     * даты и стояло здесь закомментированным. Число сериализуется без
+     * оговорок, одинаково сортируется и одинаково читается на всех
+     * платформах.
+     *
+     * `null` — желание из сборки до этого изменения. Экран в этом случае
+     * ничего не показывает: выдумывать дату нельзя, а «дата неизвестна» — шум.
+     */
+    var createdAt: Long? = null,
+    var updatedAt: Long? = null,
     var isCompleted: Boolean? = null,
     var boardIds: List<String>? = null,
     @Deprecated("reservations live in wish/{id}/picks/{uid}; this is kept only so builds released before that change keep working, and migration 004 removes it")
