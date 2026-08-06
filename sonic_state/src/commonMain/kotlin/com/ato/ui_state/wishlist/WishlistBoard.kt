@@ -25,6 +25,15 @@ data class WishlistBoard(
     var documentId: String? = null,
     var userDocumentId: String? = null,
     var name: String? = null,
+    /**
+     * Картинка доски: `board://preset/N` из
+     * [com.ato.ui_state.base.image.BoardPresets].
+     *
+     * Поле называется `emoji`, потому что раньше здесь лежало эмодзи, и в
+     * Firestore оно так и называется; переименование поля Kotlin переименовало
+     * бы поле документа и потеряло бы всё, что уже сохранено. Старые эмодзи
+     * продолжают встречаться и читаются как «выбора не было».
+     */
     var emoji: String? = null,
     @Deprecated("Don't use it. We use it to filter old boards")
     var isDefault: Boolean? = null,
@@ -32,8 +41,6 @@ data class WishlistBoard(
     var availableForFollowing: Boolean? = null,
     var availableForAll: Boolean? = null,
     var availableForUserIds: List<String>? = null,
-    var firstEmojiGradientColor: String? = null,
-    var secondEmojiGradientColor: String? = null
     //    @Serializable(with = TimestampSerializer::class)
 //    var creationDate: Timestamp? = null,
 )

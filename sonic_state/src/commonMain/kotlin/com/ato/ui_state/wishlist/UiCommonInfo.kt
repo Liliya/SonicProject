@@ -1,6 +1,5 @@
 package com.ato.ui_state.wishlist
 
-import androidx.compose.ui.graphics.Color
 import com.ato.ui_state.base.text.UiSimpleText
 
 data class UiCommonInfo(
@@ -8,7 +7,10 @@ data class UiCommonInfo(
 )
 
 data class UiBoardInfo(
-    val emoji: String?,
-    val emojiBackgroundColors: List<Color>,
+    /**
+     * Картинка доски: `board://preset/N` из
+     * [com.ato.ui_state.base.image.BoardPresets] либо старое эмодзи.
+     */
+    val picture: String?,
     val info: List<Pair<UiSimpleText, UiSimpleText>>,
 )

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -17,8 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.ato.sonic_ui.base.emoji.DisplayEmojiAva
+import com.ato.sonic_ui.base.image.BoardPresetImage
 import com.ato.sonic_ui.base.text.DisplayText
+import com.ato.ui_state.base.image.BoardPresets
 import com.ato.ui_state.wishlist.UiBoard
 
 
@@ -49,14 +51,16 @@ fun DisplayBoard(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (data.boardEmoji != null) {
-                DisplayEmojiAva(
-                    size = 48f,           // немного меньше, чтобы не перетягивал фокус
-                    sizeFactor = 0.65f,
-                    emoji = data.boardEmoji,
-                    boarderAlpha = 0f
-                )
-            }
+            // Раньше здесь был эмодзи на прозрачном кружке: без подложки и без
+            // кольца он висел в пустоте и читался как «не дорисовали».
+            BoardPresetImage(
+                index = BoardPresets.indexFor(
+                    value = data.board?.emoji,
+                    seed = data.board?.documentId
+                ),
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.size(44.dp)
+            )
 
             Spacer(modifier = Modifier.width(16.dp))
 
