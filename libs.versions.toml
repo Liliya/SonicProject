@@ -21,6 +21,10 @@ ktor = "3.5.1"
 coroutines = "1.11.0"
 kotlinx-serialization-json = "1.11.0"
 firebase-crashlytic = "19.3.0"
+# Пары из одного BoM 33.7.0, что и crashlytics выше. У gitlive нет модуля для
+# messaging, поэтому это единственная зависимость Firebase, которую приходится
+# брать нативной, а не через KMP-обёртку.
+firebase-messaging = "24.1.0"
 compose-plugin = "1.11.1"
 # Last version ever published: Google deprecated material-icons and
 # Compose Multiplatform 1.8 stopped bundling it. Pinned deliberately.
@@ -87,6 +91,7 @@ kmp-firebase-storage = { module = "dev.gitlive:firebase-storage", version.ref = 
 
 # firebase not kmp
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics", version.ref = "firebase-crashlytic" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging" }
 
 # ad
 google-play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "google-services-ad" }

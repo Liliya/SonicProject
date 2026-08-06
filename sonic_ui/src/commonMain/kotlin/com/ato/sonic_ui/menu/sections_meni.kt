@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ato.sonic_ui.base.badge.CountBadge
 import com.ato.ui_state.base.menu.Section
 import com.ato.ui_state.base.menu.UiSections
 import org.jetbrains.compose.resources.stringResource
@@ -59,8 +62,10 @@ fun DisplaySections(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             state.items.forEach { item ->
-                Text(
-                    text = item.title?.let { stringResource(it) } ?: item.name.orEmpty(),
+                // Раздел — строка из подписи и, если за ним что-то ждёт ответа,
+                // значка со счётом. Подпись берёт `weight(fill = false)`, чтобы
+                // длинное слово ужималось, а не выталкивало значок за край.
+                Row(
                     modifier = Modifier
                         .background(
                             if (item.isSelected) {
@@ -76,14 +81,26 @@ fun DisplaySections(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) { onSelected(item) },
-                    color = if (item.isSelected) {
-                        selectedTextColor
-                    } else {
-                        unselectedTextColor
-                    },
-                    textAlign = TextAlign.Center,
-                    fontSize = 14.sp
-                )
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = item.title?.let { stringResource(it) } ?: item.name.orEmpty(),
+                        modifier = Modifier.weight(1f, fill = false),
+                        color = if (item.isSelected) {
+                            selectedTextColor
+                        } else {
+                            unselectedTextColor
+                        },
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp
+                    )
+
+                    if (item.badgeCount > 0) {
+                        Spacer(Modifier.width(6.dp))
+                        CountBadge(count = item.badgeCount)
+                    }
+                }
             }
         }
     }

@@ -1,8 +1,10 @@
 package com.ato.sonic_ui.base.bottom_bar
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -32,6 +34,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ato.sonic_ui.base.Display
+import com.ato.sonic_ui.base.badge.CountBadge
 import com.ato.ui_state.base.NavBarItem
 import com.ato.ui_state.base.UiIcon
 import com.ato.ui_state.base.UiNavBar
@@ -63,12 +66,23 @@ fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
                 selected = item.isSelected,
                 onClick = { onClick(index) },
                 icon = {
-                    item.icon.Display(
-                        // Подпись уже читается скринридером, поэтому иконку
-                        // отдельно озвучивать не нужно.
-                        tint = LocalContentColor.current,
-                        selected = item.isSelected,
-                    )
+                    Box {
+                        item.icon.Display(
+                            // Подпись уже читается скринридером, поэтому иконку
+                            // отдельно озвучивать не нужно.
+                            tint = LocalContentColor.current,
+                            selected = item.isSelected,
+                        )
+                        // Значок висит над правым верхним углом иконки, а не
+                        // внутри неё: пилюля выделения обводит именно иконку, и
+                        // значок под ней на выбранной вкладке было бы не видно.
+                        CountBadge(
+                            count = item.badgeCount,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 10.dp, y = (-4).dp),
+                        )
+                    }
                 },
                 label = label?.let {
                     {
@@ -158,6 +172,30 @@ fun MUiBottomBarItem_Two_Preview() {
     ).Display()
 }
 
+
+@Preview()
+@Composable
+fun MUiBottomBarItem_Badge_Preview() {
+    UiNavBar(
+        listOf(
+            NavBarItem(
+                icon = UiIcon(Icons.Filled.Home),
+                title = "Home",
+                isSelected = true,
+            ),
+            NavBarItem(
+                icon = UiIcon(Icons.Filled.Email),
+                title = "Email",
+                badgeCount = 3,
+            ),
+            NavBarItem(
+                icon = UiIcon(Icons.Filled.Settings),
+                title = "Settings",
+                badgeCount = 120,
+            ),
+        )
+    ).Display()
+}
 
 @Preview()
 @Composable
