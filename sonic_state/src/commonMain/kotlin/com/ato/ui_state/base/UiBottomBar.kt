@@ -22,6 +22,13 @@ data class NavBarItem(
     val title: String? = null,
     val isSelected: Boolean = false,
     val reset: Boolean = false,
+    /**
+     * Сколько всего ждёт ответа за этой вкладкой. Ноль — значка нет.
+     *
+     * Число, а не флаг: «есть что-то новое» и «новых три» — разные сообщения,
+     * и второе стоит ровно столько же.
+     */
+    val badgeCount: Int = 0,
     val meta: Any? = null
 )
 

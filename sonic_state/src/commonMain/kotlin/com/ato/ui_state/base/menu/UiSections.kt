@@ -10,5 +10,7 @@ data class UiSections(
 data class Section(
     val title: StringResource? = null,
     val name: String? = null,
-    val isSelected: Boolean = false
+    val isSelected: Boolean = false,
+    /** Сколько за разделом ждёт ответа. Ноль — значка нет. */
+    val badgeCount: Int = 0,
 )
