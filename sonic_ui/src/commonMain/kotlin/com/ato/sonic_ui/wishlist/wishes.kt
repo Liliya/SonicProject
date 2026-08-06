@@ -1,12 +1,12 @@
 package com.ato.sonic_ui.wishlist
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +23,17 @@ import com.ato.ui_state.base.image.UiImagePicker
 import com.ato.ui_state.wishlist.WishlistWish
 
 
+/**
+ * Строка списка желаний.
+ *
+ * Была высокой и наполовину пустой: картинка на 64dp задавала высоту карточке,
+ * текст висел в ней по центру, а пустое описание всё равно рисовалось — пустой
+ * `Text` занимает строку, и под названием получалась дырка. На доске с одним
+ * желанием экран выглядел недоделанным.
+ *
+ * Теперь миниатюра 48dp, описание рисуется только когда оно есть, и в тот же
+ * вертикальный размер помещается вчетверо больше желаний.
+ */
 @Composable
 fun DisplayWish(
     wish: WishlistWish,
@@ -39,51 +50,47 @@ fun DisplayWish(
 
     Card(
         modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
         colors = cardColors,
         onClick = remember(wish) { { onClick.invoke(wish) } },
     ) {
-        Column(
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(16.dp)
                 .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    wish.name?.let { name ->
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    Spacer(Modifier.height(2.dp))
+            wish.imageUrl?.let { imageUrl ->
+                DisplayImage(
+                    imagePikerState = UiImagePicker(imageUrl),
+                    size = 48f,
+                    shape = MaterialTheme.shapes.small,
+                    onImageClicked = { onClick.invoke(wish) }
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                wish.name?.let { name ->
                     Text(
-                        text = wish.description.orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
-                wish.imageUrl?.let { imageUrl ->
-                    Box(
-                        modifier = Modifier,
-                        contentAlignment = Alignment.Center
-                    ) {
-                        DisplayImage(
-                            imagePikerState = UiImagePicker(imageUrl),
-                            size = 64f,
-                            shape = MaterialTheme.shapes.extraSmall,
-                            onImageClicked = { onClick.invoke(wish) }
-                        )
-                    }
+
+                // Пустое описание раньше всё равно занимало строку.
+                wish.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }

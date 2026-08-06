@@ -33,11 +33,15 @@ fun DisplayBoard(
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
+        // Одна заливка и никакой рамки: раньше карточка была залита
+        // `surfaceVariant` и обведена одновременно, а в Material 3 это либо
+        // залитая карточка, либо outlined — не оба сразу. `surfaceContainer` —
+        // та роль, которая для контейнера карточки и предназначена, и в теме
+        // она уже описана вместе со всей шкалой.
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = CardDefaults.outlinedCardBorder(), // тонкая рамка вместо тени
-        elevation = CardDefaults.cardElevation(0.dp) // без тени — минимализм
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -59,9 +63,12 @@ fun DisplayBoard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
+                // Название доски — заголовок, а не абзац текста: `bodyLarge`
+                // ставил его вровень со счётчиком под ним, и список читался
+                // одинаково серым.
                 DisplayText(
                     state = data.boardName,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
