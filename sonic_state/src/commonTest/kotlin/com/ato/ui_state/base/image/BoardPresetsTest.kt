@@ -42,7 +42,31 @@ class BoardPresetsTest {
         assertNull(BoardPresets.indexOf(fromNewerClient))
         assertEquals(
             BoardPresets.fallbackIndex("board-1"),
-            BoardPresets.indexFor(fromNewerClient, "board-1")
+            BoardPresets.resolve(fromNewerClient, "board-1")
+        )
+    }
+
+    @Test
+    fun anUploadedPictureIsNotDrawnAsAPreset() {
+        // Своя картинка доски лежит в том же поле. Если бы её приняли за
+        // «не пресет», доска нарисовала бы запасной предмет поверх
+        // загруженной фотографии.
+        val url = "https://firebasestorage.googleapis.com/v0/b/x/o/boards%2F1%2Fpicture.jpg"
+
+        assertTrue(BoardPresets.isUploaded(url))
+        assertNull(BoardPresets.resolve(url, seed = "board-1"))
+    }
+
+    @Test
+    fun anEmojiIsNotAnUploadedPicture() {
+        // Иначе старое эмодзи уехало бы в загрузчик картинок как адрес.
+        assertFalse(BoardPresets.isUploaded("🎁"))
+        assertFalse(BoardPresets.isUploaded(null))
+        assertFalse(BoardPresets.isUploaded("board://preset/3"))
+
+        assertEquals(
+            BoardPresets.fallbackIndex("board-1"),
+            BoardPresets.resolve("🎁", seed = "board-1")
         )
     }
 
@@ -74,6 +98,6 @@ class BoardPresetsTest {
     @Test
     fun anExplicitChoiceWinsOverTheFallback() {
         val chosen = BoardPresets.value(3)
-        assertEquals(3, BoardPresets.indexFor(chosen, seed = "board-1"))
+        assertEquals(3, BoardPresets.resolve(chosen, seed = "board-1"))
     }
 }

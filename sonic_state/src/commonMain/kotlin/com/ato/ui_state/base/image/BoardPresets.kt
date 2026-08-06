@@ -67,12 +67,27 @@ object BoardPresets {
     }
 
     /**
-     * Что нарисовать для этой доски: выбранный пресет, иначе — от [seed].
+     * Своя картинка доски: ссылка на файл в Storage, а не пресет и не эмодзи.
      *
-     * Старое значение поля (эмодзи) сюда попадает как «не пресет» и уходит в
-     * [fallbackIndex]: доска не остаётся без картинки, а миграция не нужна.
+     * Проверяем по схеме, а не «не пресет и не пусто»: старое эмодзи под это
+     * тоже подошло бы, и вместо картинки доска уехала бы в загрузчик с
+     * `🎁` в качестве адреса.
      */
-    fun indexFor(value: String?, seed: String?): Int = indexOf(value) ?: fallbackIndex(seed)
+    fun isUploaded(value: String?): Boolean =
+        value != null && (value.startsWith("https://") || value.startsWith("http://"))
+
+    /**
+     * Что нарисовать для этой доски, или `null` если пресет не нужен —
+     * значение оказалось ссылкой, и её заберёт загрузчик картинок.
+     *
+     * Старое значение поля (эмодзи) уходит в [fallbackIndex]: доска не
+     * остаётся без картинки, а миграция не нужна.
+     */
+    fun resolve(value: String?, seed: String?): Int? = when {
+        isPreset(value) -> indexOf(value)
+        isUploaded(value) -> null
+        else -> fallbackIndex(seed)
+    }
 
     private fun normalize(index: Int): Int = ((index % COUNT) + COUNT) % COUNT
 }
