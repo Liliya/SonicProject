@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -70,6 +71,9 @@ import kotlin.math.roundToInt
  * же [NormalizedCropRect] и переводят его в пиксели одной и той же функцией
  * ([toPixelCrop]). Разойтись им больше нечем.
  *
+ * @param shape форма рамки. Только рамки: кадр всегда квадратный, режется он
+ *   одинаково, и форма здесь говорит человеку, как результат будет показан —
+ *   кружком у аватарки, скруглённым квадратом у доски.
  * @param onConfirm отдаёт выбранный кадр долями от размеров картинки — резать
  *   байты будет вызывающий, у него для этого есть корутина. `null` означает
  *   «раскодировать не удалось, бери файл как есть»: кружок в этом случае
@@ -85,6 +89,7 @@ fun CircularImageCropper(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
     hint: UiSimpleText? = null,
+    shape: Shape = CircleShape,
 ) {
     val bitmap = remember(image) { decodeImage(image) }
     val density = LocalDensity.current
@@ -145,7 +150,7 @@ fun CircularImageCropper(
             Box(
                 modifier = Modifier
                     .size(viewportDp)
-                    .clip(CircleShape)
+                    .clip(shape)
                     .background(Color.Black)
             ) {
                 if (bitmap == null || rect == null) {
@@ -213,7 +218,7 @@ fun CircularImageCropper(
                         .border(
                             width = 2.dp,
                             color = Color.White.copy(alpha = 0.6f),
-                            shape = CircleShape,
+                            shape = shape,
                         )
                 )
             }

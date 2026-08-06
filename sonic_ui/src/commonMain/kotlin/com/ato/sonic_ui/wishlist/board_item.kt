@@ -18,9 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.ato.sonic_ui.base.image.BoardPresetImage
+import com.ato.sonic_ui.base.image.BoardPicture
 import com.ato.sonic_ui.base.text.DisplayText
-import com.ato.ui_state.base.image.BoardPresets
 import com.ato.ui_state.wishlist.UiBoard
 
 
@@ -53,13 +52,11 @@ fun DisplayBoard(
         ) {
             // Раньше здесь был эмодзи на прозрачном кружке: без подложки и без
             // кольца он висел в пустоте и читался как «не дорисовали».
-            BoardPresetImage(
-                index = BoardPresets.indexFor(
-                    value = data.board?.emoji,
-                    seed = data.board?.documentId
-                ),
+            BoardPicture(
+                value = data.board?.emoji,
+                seed = data.board?.documentId,
+                size = 44.dp,
                 shape = MaterialTheme.shapes.small,
-                modifier = Modifier.size(44.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
