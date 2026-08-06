@@ -5,7 +5,6 @@ import com.ato.ui_state.base.text.UiSimpleText
 
 data class UiBoard(
     val board: WishlistBoard?,
-    val boardEmoji: String?,
     val boardName: UiSimpleText,
     val boardWishCount: UiSimpleText,
 ): Ui
