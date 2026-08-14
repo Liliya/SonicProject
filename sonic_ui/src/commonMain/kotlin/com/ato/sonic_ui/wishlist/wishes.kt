@@ -87,6 +87,11 @@ fun DisplayWish(
  *
  * Нажатие вешает вызывающая сторона своим `modifier`: в [DisplayWish] его
  * держит сама `Card`, а внутри группы — строка.
+ *
+ * @param trailing что поставить справа от названия — галочка «куплено» в
+ *   «Подарю». Слотом, а не готовым элементом: библиотека не знает ни про
+ *   покупки, ни про строки приложения, а место справа нужно уметь занимать
+ *   чем угодно. `null` — ничего, и тогда текст занимает всю ширину.
  */
 @Composable
 fun WishRow(
@@ -94,6 +99,7 @@ fun WishRow(
     completedLabel: String,
     modifier: Modifier = Modifier,
     onImageClick: () -> Unit = {},
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val isCompleted = wish.isCompleted == true
 
@@ -159,6 +165,11 @@ fun WishRow(
                     )
                 }
             }
+        }
+
+        if (trailing != null) {
+            Spacer(Modifier.width(8.dp))
+            trailing()
         }
     }
 }
