@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.dp
 import kotlin.math.min
@@ -39,8 +40,20 @@ fun WishImagePlaceholder(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.small,
 ) {
-    val background = MaterialTheme.colorScheme.surfaceVariant
-    val glyph = MaterialTheme.colorScheme.onSurfaceVariant
+    // Смешение, а не прозрачность: прорезь ленты внутри подарка рисуется
+    // цветом подложки, и полупрозрачная подложка не стёрла бы под собой
+    // корпус коробки, а просветила бы его насквозь.
+    //
+    // Бледно-зелёный вместо серого: серая плитка на месте картинки читается
+    // как «не загрузилось», а тон бренда — как своё место в этом приложении.
+    // Подарок приглушён до трети: заглушка не должна спорить с настоящими
+    // фотографиями соседей по списку.
+    val background = lerp(
+        MaterialTheme.colorScheme.surface,
+        MaterialTheme.colorScheme.primaryContainer,
+        0.55f,
+    )
+    val glyph = lerp(background, MaterialTheme.colorScheme.primary, 0.42f)
 
     Box(
         modifier = modifier

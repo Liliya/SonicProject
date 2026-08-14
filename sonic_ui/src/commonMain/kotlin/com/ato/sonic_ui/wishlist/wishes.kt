@@ -1,5 +1,7 @@
 package com.ato.sonic_ui.wishlist
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,9 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ato.sonic_ui.base.image.DisplayImage
-import com.ato.sonic_ui.base.image.WishImagePlaceholder
-import com.ato.ui_state.base.image.UiImagePicker
+import com.ato.sonic_ui.base.image.WishPicture
 import com.ato.ui_state.wishlist.WishlistWish
 
 
@@ -110,18 +110,20 @@ fun WishRow(
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
         // Плитка есть всегда — с картинкой или с заглушкой. Раньше её не было
-        // у желаний без `imageUrl`, и строки в списке выходили разной высоты.
-        val imageUrl = wish.imageUrl
-        if (imageUrl != null) {
-            DisplayImage(
-                imagePikerState = UiImagePicker(imageUrl),
-                size = 48f,
-                shape = MaterialTheme.shapes.small,
-                onImageClicked = onImageClick,
-            )
-        } else {
-            WishImagePlaceholder(size = 48f)
-        }
+        // у желаний без картинки, и строки в списке выходили разной высоты.
+        // Развилку «есть картинка или нет» держит сам `WishPicture`: у желания
+        // их теперь до трёх, и разбирать список в каждом месте показа —
+        // верный способ разойтись на первом же изменении.
+        WishPicture(
+            url = wish.images.firstOrNull(),
+            size = 48.dp,
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onImageClick,
+            ),
+        )
         Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
