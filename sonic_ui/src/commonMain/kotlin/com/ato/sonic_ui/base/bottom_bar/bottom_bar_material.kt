@@ -56,7 +56,11 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
     NavigationBar(
         tonalElevation = 0.dp,
-        containerColor = MaterialTheme.colorScheme.surface,
+        // `surfaceContainer`, а не `surface`: в Material 3 `surface` — это цвет
+        // самого экрана, и панель, залитая им, от экрана ничем не отличается.
+        // Роль контейнера на тон плотнее — ровно та полоса внизу, которую и
+        // должно быть видно, без разделительной линии поверх.
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         items.forEachIndexed { index, item ->
             val label = item.titleRes?.let { stringResource(it) } ?: item.title
