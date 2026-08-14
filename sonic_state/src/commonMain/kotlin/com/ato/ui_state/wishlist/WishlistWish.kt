@@ -11,7 +11,23 @@ data class WishlistWish(
     var boardDocumentId: String? = "",
     var name: String? = null,
     var description: String? = "",
+    /**
+     * Первая картинка желания — и только она.
+     *
+     * Поле осталось от времени, когда картинка была одна, и продолжает
+     * писаться: сборки, выпущенные до [imageUrls], читают желание через него, и
+     * без него у них картинка пропала бы вовсе. Новый код читает [images], а не
+     * это поле.
+     */
     var imageUrl: String? = null,
+    /**
+     * Все картинки желания, до [MAX_IMAGES] штук, в порядке показа.
+     *
+     * `null` — желание из сборки до этого изменения: картинку надо брать из
+     * [imageUrl]. Ровно это и делает [images], поэтому проверять здесь на
+     * `null` за пределами модели не нужно.
+     */
+    var imageUrls: List<String>? = null,
     /**
      * Когда желание завели и когда его в последний раз меняли — миллисекунды
      * эпохи UTC.
@@ -33,7 +49,16 @@ data class WishlistWish(
     var boardIds: List<String>? = null,
     @Deprecated("reservations live in wish/{id}/picks/{uid}; this is kept only so builds released before that change keep working, and migration 004 removes it")
     var assignedUserDocumentIds: MutableList<String>? = mutableListOf(),
+    /** Первая ссылка. Пишется дальше по той же причине, что и [imageUrl]. */
     var url: String? = null,
+    /**
+     * Все ссылки желания. Числом не ограничены: ссылка ничего не весит и
+     * ничего не грузит, в отличие от картинки.
+     *
+     * `null` — желание из сборки до этого изменения, ссылку надо брать из
+     * [url]; за это отвечает [links].
+     */
+    var urls: List<String>? = null,
     /**
      * How many people have reserved this wish, without saying who.
      *
@@ -47,4 +72,39 @@ data class WishlistWish(
      */
     @Transient
     var pickedCount: Int = 0
-)
+) {
+    /**
+     * Картинки желания, как их показывают.
+     *
+     * Свойство без backing field, поэтому в Firestore не уезжает — сериализуются
+     * только поля конструктора.
+     *
+     * Пустые строки отбрасываются: у желаний, которым картинку однажды убрали,
+     * в базе остаётся `""`, и без фильтра загрузчик картинок получал бы пустой
+     * адрес вместо честного «картинки нет».
+     */
+    val images: List<String>
+        get() = imageUrls
+            ?.filter { it.isNotBlank() }
+            ?.takeIf { it.isNotEmpty() }
+            ?: listOfNotNull(imageUrl?.takeIf { it.isNotBlank() })
+
+    /** Ссылки желания. Разбираются так же, как [images]. */
+    val links: List<String>
+        get() = urls
+            ?.filter { it.isNotBlank() }
+            ?.takeIf { it.isNotEmpty() }
+            ?: listOfNotNull(url?.takeIf { it.isNotBlank() })
+
+    companion object {
+        /**
+         * Сколько картинок можно приложить к желанию.
+         *
+         * Три — это то, что помещается в ряд миниатюр на телефоне и не
+         * превращает список желаний в ленту картинок. Ссылок столько же не
+         * ограничено: ссылка — это строка текста, а картинка — файл в Storage,
+         * за который платят и трафиком, и деньгами.
+         */
+        const val MAX_IMAGES: Int = 3
+    }
+}

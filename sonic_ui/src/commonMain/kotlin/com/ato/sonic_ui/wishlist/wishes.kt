@@ -21,8 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ato.sonic_ui.base.image.DisplayImage
-import com.ato.ui_state.base.image.UiImagePicker
+import com.ato.sonic_ui.base.image.WishPicture
 import com.ato.ui_state.wishlist.WishlistWish
 
 
@@ -74,15 +73,17 @@ fun DisplayWish(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
-            wish.imageUrl?.let { imageUrl ->
-                DisplayImage(
-                    imagePikerState = UiImagePicker(imageUrl),
-                    size = 48f,
-                    shape = MaterialTheme.shapes.small,
-                    onImageClicked = { onClick.invoke(wish) }
-                )
-                Spacer(Modifier.width(12.dp))
-            }
+            // Картинка на строке есть всегда: у желания без неё это тихая
+            // заглушка того же размера. Пока картинку рисовали только тем, у
+            // кого она есть, соседние строки списка были разной высоты и с
+            // разным левым краем текста — ряд читался как сломанный, хотя
+            // сломан не был.
+            WishPicture(
+                url = wish.images.firstOrNull(),
+                size = 48.dp,
+                shape = MaterialTheme.shapes.small,
+            )
+            Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 wish.name?.let { name ->

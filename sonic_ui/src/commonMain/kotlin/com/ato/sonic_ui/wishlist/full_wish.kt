@@ -1,11 +1,14 @@
 package com.ato.sonic_ui.wishlist
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Card
@@ -21,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.ato.sonic_ui.base.image.DisplayImage
+import com.ato.sonic_ui.base.image.WishPicture
 import com.ato.ui_state.base.image.UiImagePicker
 import com.ato.ui_state.wishlist.WishlistWish
 
@@ -38,17 +42,41 @@ fun DisplayFullWish(
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            if (!wish.imageUrl.isNullOrEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    DisplayImage(
-                        imagePikerState = UiImagePicker(wish.imageUrl),
-                        shape = MaterialTheme.shapes.medium,
-                    )
+            val images = wish.images
+            when (images.size) {
+                0 -> Unit
+
+                // Одна картинка остаётся ровно тем же квадратом посреди
+                // карточки, что и раньше: у большинства желаний она одна, и
+                // ряд из одного элемента выглядел бы как недогрузившийся.
+                1 -> {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        DisplayImage(
+                            imagePikerState = UiImagePicker(images.first()),
+                            shape = MaterialTheme.shapes.medium,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+
+                else -> {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        items(images) { image ->
+                            WishPicture(
+                                url = image,
+                                size = 160.dp,
+                                shape = MaterialTheme.shapes.medium,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
             wish.name?.let { name ->
                 SelectionContainer {
@@ -70,10 +98,13 @@ fun DisplayFullWish(
                 }
             }
 
-            if (!wish.url.isNullOrEmpty()) {
+            // Ссылок может быть сколько угодно, и каждая — своя строка: в одну
+            // строку через запятую они склеились бы в неразбираемую кашу, а
+            // нажимать пришлось бы точно в нужное место.
+            wish.links.forEach { link ->
                 SelectionContainer {
                     ClickableUrlText(
-                        url = wish.url!!,
+                        url = link,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
