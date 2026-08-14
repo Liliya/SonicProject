@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ato.sonic_ui.base.image.DisplayImage
+import com.ato.sonic_ui.base.image.WishImagePlaceholder
 import com.ato.ui_state.base.image.UiImagePicker
 import com.ato.ui_state.wishlist.WishlistWish
 
@@ -68,62 +69,94 @@ fun DisplayWish(
         colors = CardDefaults.cardColors(),
         onClick = remember(wish) { { onClick.invoke(wish) } },
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-        ) {
-            wish.imageUrl?.let { imageUrl ->
-                DisplayImage(
-                    imagePikerState = UiImagePicker(imageUrl),
-                    size = 48f,
-                    shape = MaterialTheme.shapes.small,
-                    onImageClicked = { onClick.invoke(wish) }
+        WishRow(
+            wish = wish,
+            completedLabel = completedLabel,
+            onImageClick = remember(wish) { { onClick.invoke(wish) } },
+        )
+    }
+}
+
+/**
+ * То же самое, но без карточки вокруг.
+ *
+ * Нужно там, где желания лежат внутри чужой карточки — в «Подарю» они
+ * сгруппированы по людям, и группа сама является карточкой. Карточка в
+ * карточке даёт ровно то, от чего этот экран и переделывали: всё на нём
+ * выглядит одинаково, и где кончается один блок и начинается другой, не видно.
+ *
+ * Нажатие вешает вызывающая сторона своим `modifier`: в [DisplayWish] его
+ * держит сама `Card`, а внутри группы — строка.
+ */
+@Composable
+fun WishRow(
+    wish: WishlistWish,
+    completedLabel: String,
+    modifier: Modifier = Modifier,
+    onImageClick: () -> Unit = {},
+) {
+    val isCompleted = wish.isCompleted == true
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        // Плитка есть всегда — с картинкой или с заглушкой. Раньше её не было
+        // у желаний без `imageUrl`, и строки в списке выходили разной высоты.
+        val imageUrl = wish.imageUrl
+        if (imageUrl != null) {
+            DisplayImage(
+                imagePikerState = UiImagePicker(imageUrl),
+                size = 48f,
+                shape = MaterialTheme.shapes.small,
+                onImageClicked = onImageClick,
+            )
+        } else {
+            WishImagePlaceholder(size = 48f)
+        }
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            wish.name?.let { name ->
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isCompleted) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.width(12.dp))
             }
 
-            Column(modifier = Modifier.weight(1f)) {
-                wish.name?.let { name ->
+            if (isCompleted) {
+                // Вместо описания, а не вдобавок к нему: у сделанного
+                // желания «что это» уже не важно, важно «оно сделано», а
+                // лишняя строка вернула бы список к прежней рыхлости.
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = completedLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                )
+            } else {
+                // Пустое описание раньше всё равно занимало строку.
+                wish.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Spacer(Modifier.height(2.dp))
                     Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isCompleted) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                        textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                }
-
-                if (isCompleted) {
-                    // Вместо описания, а не вдобавок к нему: у сделанного
-                    // желания «что это» уже не важно, важно «оно сделано», а
-                    // лишняя строка вернула бы список к прежней рыхлости.
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = completedLabel,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                    )
-                } else {
-                    // Пустое описание раньше всё равно занимало строку.
-                    wish.description?.takeIf { it.isNotBlank() }?.let { description ->
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
                 }
             }
         }
