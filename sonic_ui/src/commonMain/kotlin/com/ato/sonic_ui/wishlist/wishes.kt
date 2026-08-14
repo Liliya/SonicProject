@@ -1,5 +1,7 @@
 package com.ato.sonic_ui.wishlist
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -67,66 +69,109 @@ fun DisplayWish(
         colors = CardDefaults.cardColors(),
         onClick = remember(wish) { { onClick.invoke(wish) } },
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-        ) {
-            // Картинка на строке есть всегда: у желания без неё это тихая
-            // заглушка того же размера. Пока картинку рисовали только тем, у
-            // кого она есть, соседние строки списка были разной высоты и с
-            // разным левым краем текста — ряд читался как сломанный, хотя
-            // сломан не был.
-            WishPicture(
-                url = wish.images.firstOrNull(),
-                size = 48.dp,
-                shape = MaterialTheme.shapes.small,
-            )
-            Spacer(Modifier.width(12.dp))
+        WishRow(
+            wish = wish,
+            completedLabel = completedLabel,
+            onImageClick = remember(wish) { { onClick.invoke(wish) } },
+        )
+    }
+}
 
-            Column(modifier = Modifier.weight(1f)) {
-                wish.name?.let { name ->
+/**
+ * То же самое, но без карточки вокруг.
+ *
+ * Нужно там, где желания лежат внутри чужой карточки — в «Подарю» они
+ * сгруппированы по людям, и группа сама является карточкой. Карточка в
+ * карточке даёт ровно то, от чего этот экран и переделывали: всё на нём
+ * выглядит одинаково, и где кончается один блок и начинается другой, не видно.
+ *
+ * Нажатие вешает вызывающая сторона своим `modifier`: в [DisplayWish] его
+ * держит сама `Card`, а внутри группы — строка.
+ *
+ * @param trailing что поставить справа от названия — галочка «куплено» в
+ *   «Подарю». Слотом, а не готовым элементом: библиотека не знает ни про
+ *   покупки, ни про строки приложения, а место справа нужно уметь занимать
+ *   чем угодно. `null` — ничего, и тогда текст занимает всю ширину.
+ */
+@Composable
+fun WishRow(
+    wish: WishlistWish,
+    completedLabel: String,
+    modifier: Modifier = Modifier,
+    onImageClick: () -> Unit = {},
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    val isCompleted = wish.isCompleted == true
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        // Плитка есть всегда — с картинкой или с заглушкой. Раньше её не было
+        // у желаний без картинки, и строки в списке выходили разной высоты.
+        // Развилку «есть картинка или нет» держит сам `WishPicture`: у желания
+        // их теперь до трёх, и разбирать список в каждом месте показа —
+        // верный способ разойтись на первом же изменении.
+        WishPicture(
+            url = wish.images.firstOrNull(),
+            size = 48.dp,
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onImageClick,
+            ),
+        )
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            wish.name?.let { name ->
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isCompleted) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (isCompleted) {
+                // Вместо описания, а не вдобавок к нему: у сделанного
+                // желания «что это» уже не важно, важно «оно сделано», а
+                // лишняя строка вернула бы список к прежней рыхлости.
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = completedLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                )
+            } else {
+                // Пустое описание раньше всё равно занимало строку.
+                wish.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Spacer(Modifier.height(2.dp))
                     Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isCompleted) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                        textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-
-                if (isCompleted) {
-                    // Вместо описания, а не вдобавок к нему: у сделанного
-                    // желания «что это» уже не важно, важно «оно сделано», а
-                    // лишняя строка вернула бы список к прежней рыхлости.
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = completedLabel,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                    )
-                } else {
-                    // Пустое описание раньше всё равно занимало строку.
-                    wish.description?.takeIf { it.isNotBlank() }?.let { description ->
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
             }
+        }
+
+        if (trailing != null) {
+            Spacer(Modifier.width(8.dp))
+            trailing()
         }
     }
 }

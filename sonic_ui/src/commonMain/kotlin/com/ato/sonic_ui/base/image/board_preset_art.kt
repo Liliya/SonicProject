@@ -100,7 +100,10 @@ fun BoardPresetImage(
 // центр картинки уже сделан вызывающим. [shade] — тот же цвет, что и низ
 // подложки: им идут прорези, которые иначе слились бы с самим предметом.
 
-private fun DrawScope.drawBoardGift(side: Float, color: Color, shade: Color) {
+// `internal`, а не `private`: этим же подарком рисуется заглушка желания без
+// картинки (`wish_placeholder.kt`). Рисовать её вторым, своим подарком значило
+// бы, что рядом на экране два разных подарка от одной руки.
+internal fun DrawScope.drawBoardGift(side: Float, color: Color, shade: Color) {
     val corner = CornerRadius(side * 0.05f, side * 0.05f)
 
     drawRoundRect(
