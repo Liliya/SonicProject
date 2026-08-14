@@ -39,12 +39,26 @@ data class DeepLinkData(
          *
          * По умолчанию — боевая: тот, кто ничего не настраивал (iOS, desktop),
          * работает как работал.
+         *
+         * Касается только исходящих ссылок, [fromUrl] читает и ту и другую
+         * схему.
          */
         var innerScheme: String = SCHEME
 
+        /**
+         * Отдаёт ссылку своей схемой, а принимает любую нашу.
+         *
+         * Строгость нужна только на выходе: там ссылку разбирает система и по
+         * ней же выбирает, какому из двух установленных приложений её отдать.
+         * На входе выбирать не из чего — ссылка уже пришла сюда, — а прийти
+         * она может с канонической схемой: её присылает сервер в пуше
+         * (`FRIENDS_DEEPLINK` в functions/notify.mjs), одинаковый для боевого
+         * проекта и для staging.
+         */
         fun fromUrl(urlString: String): DeepLinkData? {
             return if (
                 urlString.startsWith("$HTTPS://$HOST/$APP/") ||
+                urlString.startsWith("$SCHEME://$HOST/$APP/") ||
                 urlString.startsWith("$innerScheme://$HOST/$APP/")
             ) {
                 val url = Url(urlString)
