@@ -1,9 +1,11 @@
 package com.ato.sonic_ui.list
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -13,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ato.sonic_ui.base.empty.EmptyState
 import com.ato.sonic_ui.base.skeleton.SkeletonCard
@@ -89,12 +92,23 @@ fun <T> LazyListScope.displayList(
     }
 }
 
+/**
+ * Тот же список, но в строку.
+ *
+ * Карточке в `LazyRow` ширину никто не ограничивает, поэтому она обязана
+ * задать её себе сама: `Modifier.weight(1f)` внутри карточки при бесконечной
+ * ширине даёт ноль, и текст переносится по одной букве. Отсюда и [itemSpacing]
+ * вместо отступов на самих карточках — так расстояние между ними не зависит от
+ * того, что передали в [modifier].
+ */
 @Composable
 fun <T> DisplayListAsRow(
     uiList: UiList<T>,
     modifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     skeletonCount: Int = 3,
+    itemSpacing: Dp = 8.dp,
+    skeleton: (@Composable (Modifier) -> Unit)? = null,
     emptyContent: (@Composable (Modifier) -> Unit)? = null,
     listContent: @Composable (T, Modifier) -> Unit,
 ) {
@@ -108,14 +122,22 @@ fun <T> DisplayListAsRow(
                 modifier = modifier,
                 fontWeight = FontWeight.SemiBold
             )
+            Spacer(Modifier.height(8.dp))
         }
         if (list == null) {
             val loadingText = stringResource(uiList.loading)
             LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(itemSpacing),
                 modifier = Modifier.semantics { contentDescription = loadingText }
             ) {
                 items(skeletonCount) {
-                    SkeletonCard(modifier = modifier)
+                    if (skeleton != null) {
+                        skeleton(modifier)
+                    } else {
+                        // Ширина обязательна: без неё заглушка в строке
+                        // схлопывается ровно так же, как карточка.
+                        SkeletonCard(modifier = modifier.width(200.dp))
+                    }
                 }
             }
         } else {
@@ -129,7 +151,9 @@ fun <T> DisplayListAsRow(
                     )
                 }
             } else {
-                LazyRow {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(itemSpacing)
+                ) {
                     items(list) { item ->
                         listContent(item, modifier)
                     }
