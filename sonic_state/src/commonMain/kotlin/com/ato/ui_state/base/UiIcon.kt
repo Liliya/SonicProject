@@ -16,9 +16,15 @@ import org.jetbrains.compose.resources.DrawableResource
  * Ресурс здесь лежит нераспакованным (как и `NavBarItem.titleRes`) намеренно:
  * состояние собирает домен, а он не composable и в картинку ресурс превратить
  * не может. Это делает слой отрисовки.
+ *
+ * Новые поля дописаны в конец, а не рядом с [icon], хотя по смыслу им место
+ * там: `UiIcon(Icons.Default.Close, removeLabel)` зовут позиционно, и вставка
+ * параметра вторым молча меняет смысл этого аргумента.
  */
 data class UiIcon(
     val icon: ImageVector? = null,
+    val contentDescription: String = "",
+    val isLoading: Boolean = false,
     val iconRes: DrawableResource? = null,
     /**
      * Вариант с заливкой для выбранного состояния — как того требует Material 3
@@ -26,6 +32,4 @@ data class UiIcon(
      * Если варианта нет, в обоих состояниях рисуется [iconRes].
      */
     val selectedIconRes: DrawableResource? = null,
-    val contentDescription: String = "",
-    val isLoading: Boolean = false
 )
