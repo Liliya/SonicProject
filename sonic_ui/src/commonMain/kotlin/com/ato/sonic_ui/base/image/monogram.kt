@@ -2,6 +2,7 @@ package com.ato.sonic_ui.base.image
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +64,8 @@ fun MonogramAvatar(
         modifier = modifier
             .size(size.dp)
             .background(color = tone.background, shape = shape),
-        contentAlignment = Alignment.Center,
+        // Не `Center`: по вертикали букву ставит базовая линия, см. ниже.
+        contentAlignment = Alignment.TopCenter,
     ) {
         letter?.let {
             Text(
@@ -71,22 +73,63 @@ fun MonogramAvatar(
                 style = MaterialTheme.typography.headlineMedium,
                 // Кегль от размера кружка, а не из шкалы: тот же компонент
                 // рисует и аватарку 32dp в строке списка, и 96dp в профиле.
-                fontSize = (size * 0.42f).sp,
-                lineHeight = (size * 0.42f).sp,
+                fontSize = (size * LETTER_SIZE).sp,
+                lineHeight = (size * LETTER_SIZE).sp,
+                // Трекинг у шкалы отрицательный — он для строк текста, а не
+                // для одной буквы: на ней это просто сдвиг вправо на пол-сотой.
+                letterSpacing = 0.sp,
                 color = tone.ink,
+                modifier = Modifier.paddingFromBaseline(top = (size * BASELINE).dp),
             )
         }
     }
 }
+
+/** Кегль буквы от диаметра кружка. */
+private const val LETTER_SIZE = 0.42f
+
+/**
+ * Где проходит базовая линия буквы, считая от верха кружка.
+ *
+ * Буква ставится по базовой линии, а не центрированием строки, и вот почему:
+ * центрируется при этом **строчный бокс**, а он несимметричен относительно
+ * самой буквы. Сверху в нём запас на выносные элементы, снизу — на подстрочные,
+ * у заглавной буквы не занятые ничем; плюс Android добавляет своё поле шрифта.
+ * Измеренный результат — буква ниже центра кружка на 2.9% диаметра: на 64dp
+ * аватарке это почти две точки, и на глаз видно.
+ *
+ * Здесь центрируется сама буква: заглавная стоит от базовой линии вверх на
+ * высоту прописных (у Playfair Display это 0.708 кегля — прочитано из `OS/2`
+ * шрифта), значит её середина окажется в центре кружка, если базовую линию
+ * опустить на половину этой высоты ниже центра.
+ *
+ * Число зависит от гарнитуры, а гарнитуру задаёт тема приложения, не эта
+ * библиотека. Промах не страшен: у почти всех текстовых шрифтов высота
+ * прописных 0.70 ± 0.03 кегля, и на аватарке 32dp такая ошибка — две десятых
+ * точки.
+ */
+private const val CAP_HEIGHT = 0.708f
+private const val BASELINE = 0.5f + LETTER_SIZE * CAP_HEIGHT / 2f
 
 /**
  * Первая буква имени, или `null` если брать нечего.
  *
  * Пробелы и знаки препинания пропускаются: у «@nick» первая буква — «n», а не
  * собачка, а у имени с пробелом впереди — сама буква.
+ *
+ * Цифра берётся только если букв нет вовсе: у «5star» монограмма — «S». Дело
+ * не только в том, что буква говорит больше, — у акцентной гарнитуры цифры
+ * старостильные, с выносными элементами, и «5» уезжает из центра кружка вниз
+ * на 6% диаметра, потому что стоит не на базовой линии, а под ней.
  */
-private fun monogramLetter(source: String?): Char? =
-    source?.firstOrNull { it.isLetter() || it.isDigit() }?.uppercaseChar()
+private fun monogramLetter(source: String?): Char? {
+    if (source == null) return null
+
+    val letter = source.firstOrNull { it.isLetter() }
+        ?: source.firstOrNull { it.isDigit() }
+
+    return letter?.uppercaseChar()
+}
 
 /** Фон кружка и цвет буквы на нём. */
 private data class MonogramTone(val background: Color, val ink: Color)
