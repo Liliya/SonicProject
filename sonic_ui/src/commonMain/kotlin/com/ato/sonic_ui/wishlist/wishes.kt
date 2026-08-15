@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ato.sonic_ui.base.image.WishPicture
 import com.ato.ui_state.wishlist.WishlistWish
@@ -96,6 +97,10 @@ fun DisplayWish(
  * @param contentPadding поля строки. Параметр, потому что внутри карточки
  *   строки идут вплотную друг к другу и лишний воздух по вертикали там сразу
  *   виден, а отдельно стоящей карточке желания он, наоборот, нужен.
+ * @param pictureSize сторона плитки с картинкой. Тоже параметр: в «Подарю»
+ *   строка соседствует с шапкой человека и галочкой, и там плитка спорила за
+ *   внимание с названием желания; на доске, где кроме желаний ничего нет,
+ *   спорить ей не с кем.
  */
 @Composable
 fun WishRow(
@@ -104,6 +109,7 @@ fun WishRow(
     modifier: Modifier = Modifier,
     onImageClick: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+    pictureSize: Dp = 48.dp,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val isCompleted = wish.isCompleted == true
@@ -121,7 +127,7 @@ fun WishRow(
         // верный способ разойтись на первом же изменении.
         WishPicture(
             url = wish.images.firstOrNull(),
-            size = 48.dp,
+            size = pictureSize,
             shape = MaterialTheme.shapes.small,
             modifier = Modifier.clickable(
                 indication = null,

@@ -96,9 +96,15 @@ private data class MonogramTone(val background: Color, val ink: Color)
  * тёплый беж.
  *
  * Тон бледный, буква — насыщенная того же оттенка: так кружок остаётся фоном
- * для буквы, а не пятном рядом с ней, и контраст держится с запасом (у всех
- * пар — больше 7:1). Насыщенные кружки с белой буквой смотрелись бы ярче
- * фотографий соседей по списку — а фотография человека всегда важнее заглушки.
+ * для буквы, а не пятном рядом с ней. Насыщенные кружки с белой буквой
+ * смотрелись бы ярче фотографий соседей по списку — а фотография человека
+ * всегда важнее заглушки.
+ *
+ * Буквы темнее, чем были в первом варианте: на розовом и терракотовом фоне
+ * измеренный контраст выходил 4.9:1 и 5.1:1 — формально это проходной для
+ * мелкого текста минимум, но буква в кружке набрана светлым серифом, у
+ * которого тонкие штрихи, и на глаз она таяла. Теперь у всех шести пар от
+ * 7.9:1 (светлая тема) и от 8.4:1 (тёмная).
  */
 @Composable
 private fun monogramPalette(): List<MonogramTone> =
@@ -109,12 +115,12 @@ private fun monogramPalette(): List<MonogramTone> =
     }
 
 private val LightTones = listOf(
-    MonogramTone(Color(0xFFEFDCD2), Color(0xFF8C4A2F)), // терракота
-    MonogramTone(Color(0xFFEFDADD), Color(0xFF8B4A57)), // пыльная роза
-    MonogramTone(Color(0xFFDCE7DC), Color(0xFF3F5C46)), // шалфей
-    MonogramTone(Color(0xFFE2DEEF), Color(0xFF4E4574)), // лаванда
-    MonogramTone(Color(0xFFDFDFE0), Color(0xFF45454A)), // графит
-    MonogramTone(Color(0xFFEDE3D3), Color(0xFF6E5836)), // тёплый беж
+    MonogramTone(Color(0xFFEDD7CB), Color(0xFF5F2C16)), // терракота
+    MonogramTone(Color(0xFFEDD4D8), Color(0xFF5F2B37)), // пыльная роза
+    MonogramTone(Color(0xFFD6E3D7), Color(0xFF2A4531)), // шалфей
+    MonogramTone(Color(0xFFDCD8EC), Color(0xFF362D59)), // лаванда
+    MonogramTone(Color(0xFFDBDBDD), Color(0xFF303035)), // графит
+    MonogramTone(Color(0xFFEBDFCB), Color(0xFF4C3A1F)), // тёплый беж
 )
 
 /**
@@ -123,10 +129,10 @@ private val LightTones = listOf(
  * шестью фонариками.
  */
 private val DarkTones = listOf(
-    MonogramTone(Color(0xFF4A3229), Color(0xFFF0C4AE)),
-    MonogramTone(Color(0xFF4A3034), Color(0xFFF0C0C8)),
-    MonogramTone(Color(0xFF2C3B2F), Color(0xFFBCD7BF)),
-    MonogramTone(Color(0xFF343048), Color(0xFFCBC3EC)),
-    MonogramTone(Color(0xFF35343A), Color(0xFFCFCED6)),
-    MonogramTone(Color(0xFF443A2B), Color(0xFFE4D2B0)),
+    MonogramTone(Color(0xFF4A3229), Color(0xFFF7D2BF)),
+    MonogramTone(Color(0xFF4A3034), Color(0xFFF7CFD6)),
+    MonogramTone(Color(0xFF2C3B2F), Color(0xFFCBE3CE)),
+    MonogramTone(Color(0xFF343048), Color(0xFFD8D1F5)),
+    MonogramTone(Color(0xFF35343A), Color(0xFFDBDAE1)),
+    MonogramTone(Color(0xFF443A2B), Color(0xFFEFDFC1)),
 )
