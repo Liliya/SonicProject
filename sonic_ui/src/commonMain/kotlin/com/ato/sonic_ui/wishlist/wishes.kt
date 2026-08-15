@@ -3,6 +3,7 @@ package com.ato.sonic_ui.wishlist
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -92,6 +93,9 @@ fun DisplayWish(
  *   «Подарю». Слотом, а не готовым элементом: библиотека не знает ни про
  *   покупки, ни про строки приложения, а место справа нужно уметь занимать
  *   чем угодно. `null` — ничего, и тогда текст занимает всю ширину.
+ * @param contentPadding поля строки. Параметр, потому что внутри карточки
+ *   строки идут вплотную друг к другу и лишний воздух по вертикали там сразу
+ *   виден, а отдельно стоящей карточке желания он, наоборот, нужен.
  */
 @Composable
 fun WishRow(
@@ -99,6 +103,7 @@ fun WishRow(
     completedLabel: String,
     modifier: Modifier = Modifier,
     onImageClick: () -> Unit = {},
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val isCompleted = wish.isCompleted == true
@@ -107,7 +112,7 @@ fun WishRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .padding(contentPadding)
     ) {
         // Плитка есть всегда — с картинкой или с заглушкой. Раньше её не было
         // у желаний без картинки, и строки в списке выходили разной высоты.

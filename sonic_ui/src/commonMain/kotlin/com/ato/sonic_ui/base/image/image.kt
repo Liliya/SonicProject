@@ -34,9 +34,11 @@ import com.skydoves.landscapist.coil3.CoilImage
 
 /**
  * @param avatarSeed идентификатор человека, чью аватарку рисуем. Передан —
- *   значит вместо пустого кружка с «?» будет встроенный пресет
- *   ([AvatarPresets]); не передан — компонент ведёт себя как раньше, потому
- *   что этими же вызовами рисуются картинки желаний.
+ *   значит вместо пустого кружка с «?» будет монограмма ([MonogramAvatar]); не
+ *   передан — компонент ведёт себя как раньше, потому что этими же вызовами
+ *   рисуются картинки желаний.
+ * @param avatarName имя, из которого монограмма берёт букву. Не передано —
+ *   буква возьмётся из [avatarSeed]: ник хуже имени, но лучше пустого кружка.
  */
 @Composable
 fun DisplayImage(
@@ -47,16 +49,23 @@ fun DisplayImage(
     shape: Shape = CircleShape,
     modifier: Modifier = Modifier,
     avatarSeed: String? = null,
+    avatarName: String? = null,
     contentDescription: String? = null,
 ) {
     val data = imagePikerState.imageFile ?: imagePikerState.imageUrl
     // Только что выбранный файл важнее ссылки: пресет мог остаться в
     // `imageUrl` с прошлого сохранения.
     val preset = if (imagePikerState.imageFile == null) {
-        AvatarPresets.resolve(imagePikerState.imageUrl, avatarSeed)
+        AvatarPresets.indexOf(imagePikerState.imageUrl)
     } else {
         null
     }
+    // Пресет рисуется только выбранный руками. Всем остальным без фотографии —
+    // монограмма; условие на `avatarSeed` отделяет людей от желаний, которые
+    // рисуются этим же компонентом и буквы получать не должны.
+    val hasPicture = imagePikerState.imageFile != null ||
+        !imagePikerState.imageUrl.isNullOrEmpty()
+    val monogram = preset == null && !hasPicture && avatarSeed != null
 
     Box(
         modifier = modifier
@@ -82,6 +91,14 @@ fun DisplayImage(
             when {
                 preset != null -> AvatarPresetImage(
                     index = preset,
+                    shape = shape,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                monogram -> MonogramAvatar(
+                    name = avatarName,
+                    seed = avatarSeed,
+                    size = size,
                     shape = shape,
                     modifier = Modifier.fillMaxSize(),
                 )
