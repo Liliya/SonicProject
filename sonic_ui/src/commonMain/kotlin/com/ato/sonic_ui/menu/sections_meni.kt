@@ -1,11 +1,14 @@
 package com.ato.sonic_ui.menu
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -21,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -34,53 +38,108 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ato.sonic_ui.base.badge.CountBadge
+import com.ato.sonic_ui.base.badge.badgeLabel
 import com.ato.ui_state.base.menu.Section
 import com.ato.ui_state.base.menu.UiSections
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * Цвета переключателя разделов.
+ *
+ * Собраны в один объект, а не в девять параметров подряд: у переключателя есть
+ * подложка, обводка, выбранная вкладка, два цвета подписи и два состояния
+ * счётчика, и список аргументов на месте вызова превращался в стену из
+ * `Color(0xFF…)`, в которой не видно, что чему соответствует.
+ */
+data class SectionsColors(
+    val container: Color,
+    val border: Color,
+    val selected: Color,
+    val selectedText: Color,
+    val unselectedText: Color,
+    val selectedCount: Color,
+    val selectedCountText: Color,
+    val count: Color,
+    val countText: Color,
+)
+
+object SectionsDefaults {
+
+    @Composable
+    fun colors(
+        container: Color = MaterialTheme.colorScheme.surface,
+        border: Color = MaterialTheme.colorScheme.outlineVariant,
+        selected: Color = MaterialTheme.colorScheme.primaryContainer,
+        selectedText: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+        unselectedText: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+        selectedCount: Color = MaterialTheme.colorScheme.primary,
+        selectedCountText: Color = MaterialTheme.colorScheme.onPrimary,
+        count: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        countText: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    ): SectionsColors = SectionsColors(
+        container = container,
+        border = border,
+        selected = selected,
+        selectedText = selectedText,
+        unselectedText = unselectedText,
+        selectedCount = selectedCount,
+        selectedCountText = selectedCountText,
+        count = count,
+        countText = countText,
+    )
+}
+
+/**
+ * Переключатель разделов страницы.
+ *
+ * Светлая подложка с тонкой обводкой, а не сплошная зелёная капсула: это
+ * управление содержимым, а не главное действие экрана, и по акценту оно должно
+ * уступать и заголовку, и карточкам под собой. Выбранная вкладка отмечена
+ * светло-зелёной заливкой и тёмно-зелёной подписью — этого достаточно, чтобы
+ * увидеть, где находишься.
+ *
+ * Скруглением в 20dp, а не в «капсулу»: капсула читается как кнопка, а тут
+ * ничего не нажимается целиком — нажимается половина.
+ */
 @Composable
 fun DisplaySections(
     state: UiSections,
     onSelected: (Section) -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    selectedColor: Color = MaterialTheme.colorScheme.primary,
-    selectedTextColor: Color = MaterialTheme.colorScheme.onPrimary,
-    unselectedTextColor: Color = MaterialTheme.colorScheme.primary,
+    colors: SectionsColors = SectionsDefaults.colors(),
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(50.dp)
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = colors.container,
+        border = BorderStroke(1.dp, colors.border),
     ) {
         Row(
-            modifier = Modifier
-                .background(containerColor)
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.padding(4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             state.items.forEach { item ->
-                // Раздел — строка из подписи и, если за ним что-то ждёт ответа,
-                // значка со счётом. Подпись берёт `weight(fill = false)`, чтобы
-                // длинное слово ужималось, а не выталкивало значок за край.
+                // Раздел — строка из подписи, счёта содержимого и, если за ним
+                // что-то ждёт ответа, значка. Подпись берёт `weight(fill =
+                // false)`, чтобы длинное слово ужималось, а не выталкивало
+                // цифры за край.
                 Row(
                     modifier = Modifier
-                        .background(
-                            if (item.isSelected) {
-                                selectedColor
-                            } else {
-                                Color.Transparent
-                            },
-                            shape = RoundedCornerShape(50.dp)
-                        )
                         .weight(1f)
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        // clip → background → clickable, иначе подсветка нажатия
+                        // выходит прямоугольником за скруглённую вкладку.
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            if (item.isSelected) colors.selected else Color.Transparent
+                        )
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        ) { onSelected(item) },
+                        ) { onSelected(item) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -88,13 +147,30 @@ fun DisplaySections(
                         text = item.title?.let { stringResource(it) } ?: item.name.orEmpty(),
                         modifier = Modifier.weight(1f, fill = false),
                         color = if (item.isSelected) {
-                            selectedTextColor
+                            colors.selectedText
                         } else {
-                            unselectedTextColor
+                            colors.unselectedText
                         },
                         textAlign = TextAlign.Center,
                         fontSize = 14.sp
                     )
+
+                    item.count?.let { count ->
+                        Spacer(Modifier.width(6.dp))
+                        SectionCount(
+                            count = count,
+                            background = if (item.isSelected) {
+                                colors.selectedCount
+                            } else {
+                                colors.count
+                            },
+                            contentColor = if (item.isSelected) {
+                                colors.selectedCountText
+                            } else {
+                                colors.countText
+                            },
+                        )
+                    }
 
                     if (item.badgeCount > 0) {
                         Spacer(Modifier.width(6.dp))
@@ -103,6 +179,37 @@ fun DisplaySections(
                 }
             }
         }
+    }
+}
+
+/**
+ * Сколько всего лежит за разделом.
+ *
+ * Это не [CountBadge]: тот красный и означает «здесь тебя ждут», а здесь
+ * просто размер списка — спокойная цифра, которая не должна перетягивать на
+ * себя внимание с самого списка. Ноль показывается: «Подписчики 0» — это
+ * ответ, а пропавший счётчик выглядит как ещё не загрузившийся.
+ */
+@Composable
+private fun SectionCount(
+    count: Int,
+    background: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)
+            .background(color = background, shape = RoundedCornerShape(50))
+            .padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = badgeLabel(count),
+            color = contentColor,
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

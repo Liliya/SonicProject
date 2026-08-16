@@ -1,7 +1,7 @@
 package com.ato.sonic_ui.wishlist
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,63 +30,132 @@ import com.ato.sonic_ui.base.image.DisplayImage
 import com.ato.sonic_ui.base.skeleton.SkeletonBlock
 import com.ato.ui_state.base.image.UiImagePicker
 
+/**
+ * Аватарка человека в списке.
+ *
+ * 64dp уходило только на кружок, и карточка на одного человека занимала
+ * восьмую часть экрана. 48 хватает, чтобы узнать лицо, и список наконец
+ * показывает больше двух человек за раз.
+ */
+private const val AVATAR_SIZE = 48f
+
+/**
+ * Строка со человеком: аватарка слева, справа имя и `@ник`.
+ *
+ * Раньше было наоборот — текст слева, кружок у правого края, — и список
+ * читался хуже: взгляд идёт сверху вниз по левому краю, а там были имена
+ * разной длины вместо ровного столбца аватарок.
+ *
+ * Карточка молочная с тонкой обводкой, как группы на «Подарю»: серая заливка
+ * осталась за некликабельными блоками, а всё, что нажимается, выглядит
+ * одинаково. Шеврон рисуется только когда есть [onClick] — стрелка на строке,
+ * которая никуда не ведёт, обещает переход, которого нет.
+ *
+ * @param status маленькая подпись под `@ником` — например «Ждёт ответа».
+ *   Слот, а не строка, потому что цвет у статуса свой в каждом списке.
+ */
 @Composable
 fun PersonCard(
     name: String,
     nick: String,
     avaUrl: String?,
     onClick: (() -> Unit)? = null,
-    colors: CardColors = CardDefaults.cardColors(),
+    colors: CardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border: BorderStroke? = CardDefaults.outlinedCardBorder(),
+    status: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier,
-        colors = colors,
-        onClick = { onClick?.invoke() }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+    val shape = MaterialTheme.shapes.large
+    val elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+
+    if (onClick == null) {
+        Card(
+            modifier = modifier,
+            shape = shape,
+            colors = colors,
+            border = border,
+            elevation = elevation,
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                // Одна строка и многоточие: длинное имя раньше переносилось на
-                // три-четыре строки и растягивало карточку выше соседних.
-                Text(
-                    text = name,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .padding(top = 8.dp)
-                )
-                Spacer(Modifier.height(2.dp))
+            PersonRow(name, nick, avaUrl, onClick = null, status = status)
+        }
+    } else {
+        Card(
+            modifier = modifier,
+            shape = shape,
+            colors = colors,
+            border = border,
+            elevation = elevation,
+            onClick = onClick,
+        ) {
+            PersonRow(name, nick, avaUrl, onClick = onClick, status = status)
+        }
+    }
+}
+
+@Composable
+private fun PersonRow(
+    name: String,
+    nick: String,
+    avaUrl: String?,
+    onClick: (() -> Unit)?,
+    status: (@Composable () -> Unit)?,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 12.dp)
+    ) {
+        // Кружок рисуется всегда, даже без `avaUrl`: со встроенным пресетом
+        // аватарка есть у каждого, и ряд карточек одной высоты.
+        DisplayImage(
+            imagePikerState = UiImagePicker(avaUrl),
+            size = AVATAR_SIZE,
+            avatarSeed = nick,
+            onImageClicked = onClick ?: {}
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            // Имени может не быть вовсе — тогда главной строкой становится
+            // `@ник`, иначе сверху оставалась бы пустая строка.
+            val hasName = name.isNotBlank()
+
+            // Одна строка и многоточие: длинное имя раньше переносилось на
+            // три-четыре строки и растягивало карточку выше соседних.
+            Text(
+                text = if (hasName) name else "@$nick",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (hasName) {
                 Text(
                     text = "@$nick",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .padding(bottom = 8.dp)
                 )
             }
-            // Раньше кружок рисовался только под `avaUrl != null`, поэтому у
-            // людей без фотографии карточка была голой, а у остальных нет —
-            // и список ехал по вертикали. Со встроенным пресетом аватарка есть
-            // всегда, и ряд карточек наконец одной высоты.
-            Box(
-                modifier = Modifier.padding(8.dp).padding(end = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                DisplayImage(
-                    imagePikerState = UiImagePicker(avaUrl),
-                    size = 64f,
-                    avatarSeed = nick,
-                    onImageClicked = onClick ?: {}
-                )
+            status?.let {
+                Spacer(Modifier.height(4.dp))
+                it()
             }
+        }
+
+        if (onClick != null) {
+            Spacer(Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
