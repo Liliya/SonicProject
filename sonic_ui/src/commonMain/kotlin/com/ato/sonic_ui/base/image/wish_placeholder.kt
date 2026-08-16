@@ -1,18 +1,20 @@
 package com.ato.sonic_ui.base.image
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.dp
-import kotlin.math.min
+import com.ato.sonic_ui.resources.Res
+import com.ato.sonic_ui.resources.wish_gift
+import org.jetbrains.compose.resources.painterResource
 
 /**
  * Что стоит на месте картинки у желания, которому её не задали.
@@ -31,8 +33,11 @@ import kotlin.math.min
  * своего лица, которое стоило бы угадывать по идентификатору, а двенадцать
  * разных предметов на месте ненайденной картинки читались бы как содержимое.
  *
- * Подарок взят из `board_preset_art.kt` тот же самый — иначе на одном экране
- * оказались бы два разных подарка от одной руки.
+ * Сам подарок — ресурс `wish_gift`, а не рисунок в коде. Раньше его чертил
+ * `Canvas` тем же `drawBoardGift`, что и обложки досок: заливка, вырез ленты,
+ * арифметика отступов — всё в Kotlin. Правка формы означала правку кода, а
+ * увидеть, что получилось, можно было только собрав приложение. Картинку
+ * правят как картинку.
  */
 @Composable
 fun WishImagePlaceholder(
@@ -40,40 +45,40 @@ fun WishImagePlaceholder(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.small,
 ) {
-    // Смешение, а не прозрачность: прорезь ленты внутри подарка рисуется
-    // цветом подложки, и полупрозрачная подложка не стёрла бы под собой
-    // корпус коробки, а просветила бы его насквозь.
+    // Смешение, а не прозрачность: подложка должна быть плотной, иначе сквозь
+    // неё просвечивает то, на чём лежит плитка, — а лежит она и на белой
+    // карточке, и на молочном фоне списка.
     //
     // Бледно-зелёный вместо серого: серая плитка на месте картинки читается
     // как «не загрузилось», а тон бренда — как своё место в этом приложении.
-    // Подарок приглушён до трети: заглушка не должна спорить с настоящими
-    // фотографиями соседей по списку.
+    //
+    // Плитка тише, чем была: в строке главное — название желания, а слева от
+    // него стоял насыщенный зелёный квадрат, который взгляд ловил первым.
+    // Подложка разбавлена сильнее, подарок на ней — чуть светлее; контур при
+    // этом остаётся виден, ниже 0.5 он расплывается в пятно.
     val background = lerp(
         MaterialTheme.colorScheme.surface,
         MaterialTheme.colorScheme.primaryContainer,
-        0.55f,
+        0.42f,
     )
-    val glyph = lerp(background, MaterialTheme.colorScheme.primary, 0.42f)
+    val glyph = lerp(background, MaterialTheme.colorScheme.primary, 0.52f)
 
     Box(
         modifier = modifier
             .size(size.dp)
             .background(color = background, shape = shape),
+        contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(size.dp)) {
-            // Подарок нарисован в квадрате со стороной `side`; половина размера
-            // плитки — чтобы вокруг него осталось поле и он не упирался в углы.
-            val side = min(this.size.width, this.size.height) * 0.52f
-            val offset = Offset(
-                x = (this.size.width - side) / 2f,
-                y = (this.size.height - side) / 2f,
-            )
-
-            translate(left = offset.x, top = offset.y) {
-                // `shade` — цвет подложки: прорезь ленты проступает фоном, как
-                // и у пресетов доски.
-                drawBoardGift(side = side, color = glyph, shade = background)
-            }
-        }
+        // Половина плитки, а не вся: подарку нужно поле вокруг, иначе он
+        // упирается в углы и плитка перестаёт читаться как подложка. Рисунок
+        // занимает не весь свой квадрат (в макете 24×24 он лежит от 2 до 22),
+        // поэтому на глаз подарок выходит примерно в 45% плитки — столько же,
+        // сколько в макете.
+        Image(
+            painter = painterResource(Res.drawable.wish_gift),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(glyph),
+            modifier = Modifier.size((size * 0.5f).dp),
+        )
     }
 }

@@ -36,8 +36,8 @@ import com.skydoves.landscapist.coil3.CoilImage
 
 
 /**
- * @param avatarSeed см. [DisplayImage] — включает встроенные пресеты вместо
- *   заглушки «+».
+ * @param avatarSeed см. [DisplayImage] — включает монограмму вместо заглушки «+».
+ * @param avatarName имя, из которого монограмма берёт букву.
  * @param showClear рисовать ли крестик. У аватарки удаление уехало в лист
  *   действий, а два способа сделать одно и то же на одном экране только
  *   путают; у картинки желания крестик остаётся единственным.
@@ -54,6 +54,7 @@ fun DisplayImageWithCross(
     clearContentDescription: String? = null,
     contentDescription: String? = null,
     avatarSeed: String? = null,
+    avatarName: String? = null,
     showClear: Boolean = true,
     noImageHolder: @Composable BoxScope.() -> Unit = {
         Text(
@@ -68,10 +69,13 @@ fun DisplayImageWithCross(
 ) {
     val data = imagePikerState.imageFile ?: imagePikerState.imageUrl
     val preset = if (imagePikerState.imageFile == null) {
-        AvatarPresets.resolve(imagePikerState.imageUrl, avatarSeed)
+        AvatarPresets.indexOf(imagePikerState.imageUrl)
     } else {
         null
     }
+    val hasPicture = imagePikerState.imageFile != null ||
+        !imagePikerState.imageUrl.isNullOrEmpty()
+    val monogram = preset == null && !hasPicture && avatarSeed != null
 
     Box(
         modifier = modifier
@@ -97,6 +101,14 @@ fun DisplayImageWithCross(
             when {
                 preset != null -> AvatarPresetImage(
                     index = preset,
+                    shape = shape,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                monogram -> MonogramAvatar(
+                    name = avatarName,
+                    seed = avatarSeed,
+                    size = size,
                     shape = shape,
                     modifier = Modifier.fillMaxSize(),
                 )
