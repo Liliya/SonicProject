@@ -108,10 +108,11 @@ fun DisplaySections(
     modifier: Modifier = Modifier,
     colors: SectionsColors = SectionsDefaults.colors(),
 ) {
+    // Боковой отступ задаёт вызывающая сторона: переключатель обязан стоять
+    // ровно по краю карточек под ним, а насколько те отступают от края экрана,
+    // знает экран, а не компонент.
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = colors.container,
         border = BorderStroke(1.dp, colors.border),
