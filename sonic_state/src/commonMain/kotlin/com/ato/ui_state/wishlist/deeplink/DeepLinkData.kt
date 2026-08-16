@@ -26,10 +26,40 @@ data class DeepLinkData(
         // `events` уже разошлись по рукам — они всё ещё должны открывать её.
         const val LEGACY_GIFTING: String = "events"
 
+        /**
+         * Схема внутренних ссылок — тех, которыми приложение зовёт само себя:
+         * переход по уведомлению, [DeeplinkExecutor.openDeeplink].
+         *
+         * Задаётся сборкой, потому что staging стоит на телефоне рядом с
+         * боевым приложением. Пока обе сборки объявляли одну схему, система не
+         * могла выбрать между ними: нажатие на уведомление из staging с равным
+         * успехом открывало боевое приложение, и наоборот. Схема должна
+         * совпадать с той, что объявлена в манифесте, — на Android их задаёт
+         * один и тот же тип сборки.
+         *
+         * По умолчанию — боевая: тот, кто ничего не настраивал (iOS, desktop),
+         * работает как работал.
+         *
+         * Касается только исходящих ссылок, [fromUrl] читает и ту и другую
+         * схему.
+         */
+        var innerScheme: String = SCHEME
+
+        /**
+         * Отдаёт ссылку своей схемой, а принимает любую нашу.
+         *
+         * Строгость нужна только на выходе: там ссылку разбирает система и по
+         * ней же выбирает, какому из двух установленных приложений её отдать.
+         * На входе выбирать не из чего — ссылка уже пришла сюда, — а прийти
+         * она может с канонической схемой: её присылает сервер в пуше
+         * (`FRIENDS_DEEPLINK` в functions/notify.mjs), одинаковый для боевого
+         * проекта и для staging.
+         */
         fun fromUrl(urlString: String): DeepLinkData? {
             return if (
                 urlString.startsWith("$HTTPS://$HOST/$APP/") ||
-                urlString.startsWith("$SCHEME://$HOST/$APP/")
+                urlString.startsWith("$SCHEME://$HOST/$APP/") ||
+                urlString.startsWith("$innerScheme://$HOST/$APP/")
             ) {
                 val url = Url(urlString)
                 val pathSegments = url.pathSegments.filter { it.isNotEmpty() }
@@ -48,7 +78,10 @@ data class DeepLinkData(
             val addWish = DeeplinkCreator.addWishDeeplink
             return addWish.copy(
                 deeplinkParams = addWish.deeplinkParams.copy(
-                    wishDescription = sharedUris.joinToString { "/n" }
+                    // Стояло `joinToString { "/n" }`: каждая ссылка заменялась
+                    // на литерал «/n», и в описание попадало «/n, /n» вместо
+                    // самих ссылок.
+                    wishDescription = sharedUris.joinToString(separator = "\n")
                 )
             )
         }
@@ -111,7 +144,7 @@ data class DeepLinkData(
         val path = pathSegments.joinToString(separator = "/")
         val query = deeplinkParams.toQueryString()
 
-        return "$SCHEME://$HOST/$APP/$path?$query"
+        return "$innerScheme://$HOST/$APP/$path?$query"
     }
 
     fun toWebDeeplink(): String {
