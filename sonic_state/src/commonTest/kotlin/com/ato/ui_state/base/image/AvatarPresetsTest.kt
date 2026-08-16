@@ -81,33 +81,44 @@ class AvatarPresetsTest {
     }
 
     @Test
-    fun resolvePrefersTheChosenPresetOverTheSeed() {
-        val chosen = AvatarPresets.url(2)
-
-        assertEquals(2, AvatarPresets.resolve(chosen, seed = "uid"))
+    fun bucketIsStableForTheSameSeed() {
+        // Цвет монограммы обещан постоянным: один и тот же человек не должен
+        // менять кружок при каждом открытии экрана.
+        assertEquals(
+            AvatarPresets.bucket("C1j1H9fCPC1j4z3I5nN7", 6),
+            AvatarPresets.bucket("C1j1H9fCPC1j4z3I5nN7", 6)
+        )
     }
 
     @Test
-    fun resolveFallsBackWhenThereIsNoAvatarAtAll() {
-        assertEquals(AvatarPresets.fallbackIndex("uid"), AvatarPresets.resolve(null, seed = "uid"))
-        assertEquals(AvatarPresets.fallbackIndex("uid"), AvatarPresets.resolve("", seed = "uid"))
+    fun bucketStaysInsideTheRequestedRange() {
+        val seeds = List(200) { "user-$it" } + List(50) { "оченьДлинныйНикнейм$it" }
+
+        seeds.forEach { seed ->
+            val index = AvatarPresets.bucket(seed, 6)
+            assertTrue(index in 0 until 6, "seed $seed gave $index")
+        }
     }
 
     @Test
-    fun resolveSendsRealLinksToTheImageLoader() {
-        assertNull(AvatarPresets.resolve("https://example.com/ava.jpg", seed = "uid"))
+    fun bucketSpreadsAcrossTheWholeRange() {
+        val used = List(500) { AvatarPresets.bucket("uid-$it", 6) }.toSet()
+
+        assertEquals(6, used.size)
     }
 
     @Test
-    fun withoutASeedThereIsNoFallback() {
-        // Те же компоненты рисуют картинки желаний. Пустое желание должно
-        // остаться пустым, а не получить подарочную коробку.
-        assertNull(AvatarPresets.resolve(null, seed = null))
-        assertNull(AvatarPresets.resolve("", seed = null))
+    fun bucketSurvivesNonsenseRanges() {
+        // Палитра не может оказаться пустой, но падать на этом компонент не
+        // должен: аватарка — не то место, где стоит ронять экран.
+        assertEquals(0, AvatarPresets.bucket("uid", 0))
+        assertEquals(0, AvatarPresets.bucket("uid", -3))
     }
 
     @Test
-    fun aChosenPresetIsDrawnEvenWithoutASeed() {
-        assertEquals(4, AvatarPresets.resolve(AvatarPresets.url(4), seed = null))
+    fun aChosenPresetIsStillRecognised() {
+        // Осознанный выбор пресета монограмма не отменяет.
+        assertEquals(4, AvatarPresets.indexOf(AvatarPresets.url(4)))
+        assertNull(AvatarPresets.indexOf("https://example.com/ava.jpg"))
     }
 }

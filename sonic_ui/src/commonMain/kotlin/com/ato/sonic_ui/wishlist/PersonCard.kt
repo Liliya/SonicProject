@@ -108,8 +108,8 @@ private fun PersonRow(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 12.dp)
     ) {
-        // Кружок рисуется всегда, даже без `avaUrl`: со встроенным пресетом
-        // аватарка есть у каждого, и ряд карточек одной высоты.
+        // Кружок рисуется всегда, даже без `avaUrl`: с монограммой аватарка
+        // есть у каждого, и ряд карточек одной высоты.
         DisplayImage(
             imagePikerState = UiImagePicker(avaUrl),
             size = AVATAR_SIZE,

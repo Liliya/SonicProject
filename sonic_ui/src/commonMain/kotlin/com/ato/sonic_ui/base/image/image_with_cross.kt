@@ -29,15 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ato.helpers.getAsyncImageLoader
 import com.ato.helpers.getPlatformContext
+import com.ato.ui_state.base.image.AvatarPresets
 import com.ato.ui_state.base.image.UiImagePicker
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 
 
 /**
- * @param avatarSeed см. [DisplayImage] — включает букву имени или встроенный
- *   пресет вместо заглушки «+».
- * @param avatarName см. [DisplayImage].
+ * @param avatarSeed см. [DisplayImage] — включает монограмму вместо заглушки «+».
+ * @param avatarName имя, из которого монограмма берёт букву.
  * @param showClear рисовать ли крестик. У аватарки удаление уехало в лист
  *   действий, а два способа сделать одно и то же на одном экране только
  *   путают; у картинки желания крестик остаётся единственным.
@@ -68,7 +68,14 @@ fun DisplayImageWithCross(
     }
 ) {
     val data = imagePikerState.imageFile ?: imagePikerState.imageUrl
-    val avatar = resolveAvatar(imagePikerState, avatarSeed, avatarName)
+    val preset = if (imagePikerState.imageFile == null) {
+        AvatarPresets.indexOf(imagePikerState.imageUrl)
+    } else {
+        null
+    }
+    val hasPicture = imagePikerState.imageFile != null ||
+        !imagePikerState.imageUrl.isNullOrEmpty()
+    val monogram = preset == null && !hasPicture && avatarSeed != null
 
     Box(
         modifier = modifier
@@ -92,16 +99,16 @@ fun DisplayImageWithCross(
                 .avatarLabel(contentDescription)
         ) {
             when {
-                avatar is Avatar.Letter -> LetterAvatarImage(
-                    letter = avatar.letter,
-                    seed = avatar.seed,
-                    size = size,
+                preset != null -> AvatarPresetImage(
+                    index = preset,
                     shape = shape,
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                avatar is Avatar.Preset -> AvatarPresetImage(
-                    index = avatar.index,
+                monogram -> MonogramAvatar(
+                    name = avatarName,
+                    seed = avatarSeed,
+                    size = size,
                     shape = shape,
                     modifier = Modifier.fillMaxSize(),
                 )

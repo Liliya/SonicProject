@@ -1,0 +1,67 @@
+<!--
+  Подарок на месте картинки желания.
+
+  Раньше эта же коробка рисовалась в `WishImagePlaceholder` кодом — `Canvas` и
+  `drawBoardGift`. Рисунок в коде нельзя ни открыть, ни поправить в редакторе:
+  чтобы сдвинуть бантик, нужно было править арифметику в Kotlin и пересобирать
+  приложение. Теперь это обычный ресурс-картинка, и правится он как картинка.
+
+  Контур, а не заливка: обводка одинаковой толщины со скруглёнными стыками
+  читается на плитке 48dp так же, как в макете. Цвет здесь чёрный только чтобы
+  что-то было задано — на экране он всегда перекрашивается `ColorFilter.tint`
+  под тему, поэтому в тёмной теме подарок светлеет вместе с ней.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- крышка, левая половина -->
+    <path
+        android:pathData="M3.0,6.6 L10.0,6.6 A1.0,1.0 0 0 1 11.0,7.6 L11.0,10.4 A1.0,1.0 0 0 1 10.0,11.4 L3.0,11.4 A1.0,1.0 0 0 1 2.0,10.4 L2.0,7.6 A1.0,1.0 0 0 1 3.0,6.6 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- крышка, правая половина -->
+    <path
+        android:pathData="M14.0,6.6 L21.0,6.6 A1.0,1.0 0 0 1 22.0,7.6 L22.0,10.4 A1.0,1.0 0 0 1 21.0,11.4 L14.0,11.4 A1.0,1.0 0 0 1 13.0,10.4 L13.0,7.6 A1.0,1.0 0 0 1 14.0,6.6 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- коробка, левая половина -->
+    <path
+        android:pathData="M4.5,11.4 L10.0,11.4 A1.0,1.0 0 0 1 11.0,12.4 L11.0,20.8 A1.0,1.0 0 0 1 10.0,21.8 L4.5,21.8 A1.0,1.0 0 0 1 3.5,20.8 L3.5,12.4 A1.0,1.0 0 0 1 4.5,11.4 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- коробка, правая половина -->
+    <path
+        android:pathData="M14.0,11.4 L19.5,11.4 A1.0,1.0 0 0 1 20.5,12.4 L20.5,20.8 A1.0,1.0 0 0 1 19.5,21.8 L14.0,21.8 A1.0,1.0 0 0 1 13.0,20.8 L13.0,12.4 A1.0,1.0 0 0 1 14.0,11.4 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- бант, левая петля -->
+    <path
+        android:pathData="M12,6.6 C11.0,3.9 9.6,1.9 7.9,2.0 C6.2,2.1 5.4,3.6 5.9,4.8 C6.6,6.3 9.4,6.9 12,6.6 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- бант, правая петля -->
+    <path
+        android:pathData="M12,6.6 C13.0,3.9 14.4,1.9 16.1,2.0 C17.8,2.1 18.6,3.6 18.1,4.8 C17.4,6.3 14.6,6.9 12,6.6 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

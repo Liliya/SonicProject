@@ -34,11 +34,11 @@ import com.skydoves.landscapist.coil3.CoilImage
 
 /**
  * @param avatarSeed идентификатор человека, чью аватарку рисуем. Передан —
- *   значит вместо пустого кружка с «?» будет буква имени или встроенный пресет
- *   ([AvatarPresets]); не передан — компонент ведёт себя как раньше, потому
- *   что этими же вызовами рисуются картинки желаний.
- * @param avatarName имя человека — из него берётся буква на кружке. Не
- *   передано, а [avatarSeed] есть — рисуется пресет, как было раньше.
+ *   значит вместо пустого кружка с «?» будет монограмма ([MonogramAvatar]); не
+ *   передан — компонент ведёт себя как раньше, потому что этими же вызовами
+ *   рисуются картинки желаний.
+ * @param avatarName имя, из которого монограмма берёт букву. Не передано —
+ *   буква возьмётся из [avatarSeed]: ник хуже имени, но лучше пустого кружка.
  */
 @Composable
 fun DisplayImage(
@@ -49,11 +49,23 @@ fun DisplayImage(
     shape: Shape = CircleShape,
     modifier: Modifier = Modifier,
     avatarSeed: String? = null,
-    contentDescription: String? = null,
     avatarName: String? = null,
+    contentDescription: String? = null,
 ) {
     val data = imagePikerState.imageFile ?: imagePikerState.imageUrl
-    val avatar = resolveAvatar(imagePikerState, avatarSeed, avatarName)
+    // Только что выбранный файл важнее ссылки: пресет мог остаться в
+    // `imageUrl` с прошлого сохранения.
+    val preset = if (imagePikerState.imageFile == null) {
+        AvatarPresets.indexOf(imagePikerState.imageUrl)
+    } else {
+        null
+    }
+    // Пресет рисуется только выбранный руками. Всем остальным без фотографии —
+    // монограмма; условие на `avatarSeed` отделяет людей от желаний, которые
+    // рисуются этим же компонентом и буквы получать не должны.
+    val hasPicture = imagePikerState.imageFile != null ||
+        !imagePikerState.imageUrl.isNullOrEmpty()
+    val monogram = preset == null && !hasPicture && avatarSeed != null
 
     Box(
         modifier = modifier
@@ -77,16 +89,16 @@ fun DisplayImage(
                 .avatarLabel(contentDescription)
         ) {
             when {
-                avatar is Avatar.Letter -> LetterAvatarImage(
-                    letter = avatar.letter,
-                    seed = avatar.seed,
-                    size = size,
+                preset != null -> AvatarPresetImage(
+                    index = preset,
                     shape = shape,
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                avatar is Avatar.Preset -> AvatarPresetImage(
-                    index = avatar.index,
+                monogram -> MonogramAvatar(
+                    name = avatarName,
+                    seed = avatarSeed,
+                    size = size,
                     shape = shape,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -102,8 +114,8 @@ fun DisplayImage(
 
                 // Обводки у самой фотографии нет: рамку в 1dp уже рисует
                 // внешний `Box`, и вместе они складывались в двойное белое
-                // кольцо — фотография в списке весила заметно больше соседних
-                // аватарок-заглушек, хотя это одна и та же строка.
+                // кольцо — фотография в списке весила заметно больше соседней
+                // монограммы, хотя это одна и та же строка.
                 else -> CoilImage(
                     imageLoader = { getAsyncImageLoader(getPlatformContext()) },
                     modifier = Modifier
@@ -118,48 +130,6 @@ fun DisplayImage(
             }
         }
     }
-}
-
-/**
- * Что рисовать в кружке вместо фотографии.
- *
- * Отдельный тип, а не два `if` подряд на каждом месте вызова: правило выбора
- * одно на все кружки в приложении, и разъехаться оно не должно — человек с
- * буквой в списке и с подарочной коробкой в профиле выглядит как два разных
- * человека.
- */
-internal sealed interface Avatar {
-    /** Пресет: либо выбранный человеком, либо запасной по идентификатору. */
-    data class Preset(val index: Int) : Avatar
-
-    data class Letter(val letter: String, val seed: String?) : Avatar
-}
-
-/**
- * Порядок такой:
- *
- * 1. только что выбранный файл — это фотография, и она важнее всего;
- * 2. пресет, выбранный человеком осознанно, — его выбор не отменяется буквой;
- * 3. настоящая фотография по ссылке;
- * 4. буква имени — если имя известно;
- * 5. запасной пресет по идентификатору — если имени нет, но человек есть;
- * 6. ничего: «?», как и раньше. Сюда попадают картинки желаний, у которых нет
- *    ни имени, ни идентификатора человека.
- */
-internal fun resolveAvatar(
-    imagePikerState: UiImagePicker,
-    avatarSeed: String?,
-    avatarName: String?,
-): Avatar? {
-    if (imagePikerState.imageFile != null) return null
-
-    val url = imagePikerState.imageUrl
-    AvatarPresets.indexOf(url)?.let { return Avatar.Preset(it) }
-    if (!url.isNullOrEmpty()) return null
-
-    avatarInitial(avatarName)?.let { return Avatar.Letter(it, avatarSeed ?: avatarName) }
-
-    return avatarSeed?.let { Avatar.Preset(AvatarPresets.fallbackIndex(it)) }
 }
 
 /**
