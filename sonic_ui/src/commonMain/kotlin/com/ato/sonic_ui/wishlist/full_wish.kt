@@ -22,12 +22,14 @@ import com.ato.sonic_ui.base.image.DisplayImage
 import com.ato.sonic_ui.base.image.WishPicture
 import com.ato.sonic_ui.base.text.LinkPreview
 import com.ato.ui_state.base.image.UiImagePicker
+import com.ato.ui_state.base.link.UiLinkGuard
 import com.ato.ui_state.wishlist.WishlistWish
 
 
 @Composable
 fun DisplayFullWish(
     wish: WishlistWish,
+    linkGuard: UiLinkGuard,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -97,9 +99,14 @@ fun DisplayFullWish(
             // Каждая ссылка — своя карточка с именем сайта. Раньше здесь стоял
             // сам адрес целиком, и ссылка из поиска занимала экран на двадцать
             // строк, из которых читалось одно слово.
+            //
+            // Это чужое желание: ссылку в нём набирал не тот, кто её сейчас
+            // читает. Поэтому карточка не просто сокращает адрес, а проверяет
+            // его — см. [LinkPreview].
             wish.links.forEach { link ->
                 LinkPreview(
                     url = link,
+                    guard = linkGuard,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
