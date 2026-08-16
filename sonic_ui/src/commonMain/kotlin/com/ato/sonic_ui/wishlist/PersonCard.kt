@@ -114,7 +114,8 @@ private fun PersonRow(
             imagePikerState = UiImagePicker(avaUrl),
             size = AVATAR_SIZE,
             avatarSeed = nick,
-            onImageClicked = onClick ?: {}
+            onImageClicked = onClick ?: {},
+            avatarName = name.ifBlank { nick },
         )
 
         Spacer(Modifier.width(12.dp))
@@ -207,7 +208,8 @@ fun PersonCompactCard(
                 imagePikerState = UiImagePicker(avaUrl),
                 size = COMPACT_AVATAR_SIZE,
                 avatarSeed = nick,
-                onImageClicked = onClick ?: {}
+                onImageClicked = onClick ?: {},
+                avatarName = name.ifBlank { nick },
             )
 
             Spacer(Modifier.height(8.dp))

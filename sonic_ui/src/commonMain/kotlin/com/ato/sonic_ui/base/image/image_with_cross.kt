@@ -29,15 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ato.helpers.getAsyncImageLoader
 import com.ato.helpers.getPlatformContext
-import com.ato.ui_state.base.image.AvatarPresets
 import com.ato.ui_state.base.image.UiImagePicker
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 
 
 /**
- * @param avatarSeed см. [DisplayImage] — включает встроенные пресеты вместо
- *   заглушки «+».
+ * @param avatarSeed см. [DisplayImage] — включает букву имени или встроенный
+ *   пресет вместо заглушки «+».
+ * @param avatarName см. [DisplayImage].
  * @param showClear рисовать ли крестик. У аватарки удаление уехало в лист
  *   действий, а два способа сделать одно и то же на одном экране только
  *   путают; у картинки желания крестик остаётся единственным.
@@ -54,6 +54,7 @@ fun DisplayImageWithCross(
     clearContentDescription: String? = null,
     contentDescription: String? = null,
     avatarSeed: String? = null,
+    avatarName: String? = null,
     showClear: Boolean = true,
     noImageHolder: @Composable BoxScope.() -> Unit = {
         Text(
@@ -67,11 +68,7 @@ fun DisplayImageWithCross(
     }
 ) {
     val data = imagePikerState.imageFile ?: imagePikerState.imageUrl
-    val preset = if (imagePikerState.imageFile == null) {
-        AvatarPresets.resolve(imagePikerState.imageUrl, avatarSeed)
-    } else {
-        null
-    }
+    val avatar = resolveAvatar(imagePikerState, avatarSeed, avatarName)
 
     Box(
         modifier = modifier
@@ -95,8 +92,16 @@ fun DisplayImageWithCross(
                 .avatarLabel(contentDescription)
         ) {
             when {
-                preset != null -> AvatarPresetImage(
-                    index = preset,
+                avatar is Avatar.Letter -> LetterAvatarImage(
+                    letter = avatar.letter,
+                    seed = avatar.seed,
+                    size = size,
+                    shape = shape,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                avatar is Avatar.Preset -> AvatarPresetImage(
+                    index = avatar.index,
                     shape = shape,
                     modifier = Modifier.fillMaxSize(),
                 )

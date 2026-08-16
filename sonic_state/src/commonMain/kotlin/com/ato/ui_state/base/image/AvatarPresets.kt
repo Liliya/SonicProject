@@ -55,15 +55,26 @@ object AvatarPresets {
      * Пустой [seed] всегда даёт нулевой пресет. Аккаунтов без идентификатора в
      * норме не бывает, но лучше одинаковая картинка, чем падение.
      */
-    fun fallbackIndex(seed: String?): Int {
-        if (seed.isNullOrEmpty()) return 0
+    fun fallbackIndex(seed: String?): Int = paletteIndex(seed, COUNT)
+
+    /**
+     * Тот же расчёт для набора любого размера — например для палитры аватарок
+     * с буквой, которых не десять.
+     *
+     * Вынесен сюда, а не переписан на месте, чтобы у человека кружок был одного
+     * цвета везде: два разных способа посчитать «номер по идентификатору» рано
+     * или поздно разойдутся, и один и тот же человек оказался бы розовым в
+     * списке и мятным в профиле.
+     */
+    fun paletteIndex(seed: String?, count: Int): Int {
+        if (seed.isNullOrEmpty() || count <= 0) return 0
 
         var hash = 2166136261u
         for (char in seed) {
             hash = hash xor char.code.toUInt()
             hash *= 16777619u
         }
-        return (hash % COUNT.toUInt()).toInt()
+        return (hash % count.toUInt()).toInt()
     }
 
     /**
