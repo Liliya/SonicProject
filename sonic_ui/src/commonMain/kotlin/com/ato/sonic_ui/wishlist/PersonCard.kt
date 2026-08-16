@@ -1,5 +1,6 @@
 package com.ato.sonic_ui.wishlist
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,9 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,68 +27,173 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ato.sonic_ui.base.card.paperCardBorder
+import com.ato.sonic_ui.base.card.paperCardColor
 import com.ato.sonic_ui.base.image.DisplayImage
 import com.ato.sonic_ui.base.skeleton.SkeletonBlock
 import com.ato.ui_state.base.image.UiImagePicker
 
+/**
+ * Аватарка человека в списке.
+ *
+ * Ровно как в шапке группы на «Подарю»: 32dp кружка внутри колонки шириной с
+ * плитку желания. 64dp уходило только на кружок, и карточка на одного человека
+ * занимала восьмую часть экрана.
+ */
+private const val AVATAR_SIZE = 32f
+
+/**
+ * Ширина колонки под аватарку.
+ *
+ * Шире самого кружка, потому что на «Подарю» в этой колонке стоит плитка
+ * желания, а аватарка — по её центру. Текст в обоих списках начинается от
+ * одной вертикали, и два экрана выглядят набранными по одной сетке.
+ */
+private val MEDIA_COLUMN = 43.dp
+
+/** Зазор между картинкой и текстом. Столько же держат строки на «Подарю». */
+private val MEDIA_GAP = 12.dp
+
+/** Поля внутри карточки. По горизонтали — как у строк на «Подарю». */
+private val ROW_INSET = 12.dp
+
+/**
+ * Поля по вертикали — больше, чем пять точек шапки на «Подарю».
+ *
+ * Там шапка стоит внутри карточки, у которой ниже есть строки желаний, и
+ * нажимается вся карточка. Здесь карточка и есть одна строка: с пятью точками
+ * она выходит в 42dp — ниже минимальной цели для пальца.
+ */
+private val ROW_VERTICAL_INSET = 9.dp
+
+/**
+ * Строка со человеком: аватарка слева, справа имя и `@ник`.
+ *
+ * Раньше было наоборот — текст слева, кружок у правого края, — и список
+ * читался хуже: взгляд идёт сверху вниз по левому краю, а там были имена
+ * разной длины вместо ровного столбца аватарок.
+ *
+ * Оформлена ровно как карточка человека на «Подарю»: тот же лист бумаги с
+ * волосяной границей ([paperCardColor], [paperCardBorder]), то же скругление,
+ * та же внутренняя сетка. Два списка людей в одном приложении не должны
+ * выглядеть нарисованными разными руками — а выглядели: здесь кружок был в
+ * полтора раза крупнее, имя на два кегля больше, а заливка своя.
+ *
+ * Серая заливка осталась за некликабельными блоками, а всё, что нажимается,
+ * выглядит одинаково. Шеврон рисуется только когда есть [onClick] — стрелка на
+ * строке, которая никуда не ведёт, обещает переход, которого нет.
+ *
+ * @param status маленькая подпись под `@ником` — например «Ждёт ответа».
+ *   Слот, а не строка, потому что цвет у статуса свой в каждом списке.
+ */
 @Composable
 fun PersonCard(
     name: String,
     nick: String,
     avaUrl: String?,
     onClick: (() -> Unit)? = null,
-    colors: CardColors = CardDefaults.cardColors(),
+    colors: CardColors = CardDefaults.cardColors(containerColor = paperCardColor()),
+    border: BorderStroke? = paperCardBorder(),
+    status: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier,
-        colors = colors,
-        onClick = { onClick?.invoke() }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+    val shape = MaterialTheme.shapes.medium
+    val elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+
+    if (onClick == null) {
+        Card(
+            modifier = modifier,
+            shape = shape,
+            colors = colors,
+            border = border,
+            elevation = elevation,
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                // Одна строка и многоточие: длинное имя раньше переносилось на
-                // три-четыре строки и растягивало карточку выше соседних.
-                Text(
-                    text = name,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .padding(top = 8.dp)
-                )
-                Spacer(Modifier.height(2.dp))
+            PersonRow(name, nick, avaUrl, onClick = null, status = status)
+        }
+    } else {
+        Card(
+            modifier = modifier,
+            shape = shape,
+            colors = colors,
+            border = border,
+            elevation = elevation,
+            onClick = onClick,
+        ) {
+            PersonRow(name, nick, avaUrl, onClick = onClick, status = status)
+        }
+    }
+}
+
+@Composable
+private fun PersonRow(
+    name: String,
+    nick: String,
+    avaUrl: String?,
+    onClick: (() -> Unit)?,
+    status: (@Composable () -> Unit)?,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = ROW_INSET, vertical = ROW_VERTICAL_INSET)
+    ) {
+        // Кружок рисуется всегда, даже без `avaUrl`: с монограммой аватарка
+        // есть у каждого, и ряд карточек одной высоты. Стоит он по центру
+        // колонки шириной с плитку желания — как на «Подарю».
+        Box(
+            modifier = Modifier.width(MEDIA_COLUMN),
+            contentAlignment = Alignment.Center,
+        ) {
+            DisplayImage(
+                imagePikerState = UiImagePicker(avaUrl),
+                size = AVATAR_SIZE,
+                avatarSeed = nick,
+                onImageClicked = onClick ?: {},
+                avatarName = name.ifBlank { nick },
+            )
+        }
+
+        Spacer(Modifier.width(MEDIA_GAP))
+
+        Column(modifier = Modifier.weight(1f)) {
+            // Имени может не быть вовсе — тогда главной строкой становится
+            // `@ник`, иначе сверху оставалась бы пустая строка.
+            val hasName = name.isNotBlank()
+
+            // Одна строка и многоточие: длинное имя раньше переносилось на
+            // три-четыре строки и растягивало карточку выше соседних.
+            Text(
+                text = if (hasName) name else "@$nick",
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (hasName) {
                 Text(
                     text = "@$nick",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .padding(bottom = 8.dp)
                 )
             }
-            // Раньше кружок рисовался только под `avaUrl != null`, поэтому у
-            // людей без фотографии карточка была голой, а у остальных нет —
-            // и список ехал по вертикали. С монограммой аватарка есть всегда,
-            // и ряд карточек наконец одной высоты.
-            Box(
-                modifier = Modifier.padding(8.dp).padding(end = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                DisplayImage(
-                    imagePikerState = UiImagePicker(avaUrl),
-                    size = 64f,
-                    avatarSeed = nick,
-                    avatarName = name.ifBlank { nick },
-                    onImageClicked = onClick ?: {}
-                )
+            status?.let {
+                Spacer(Modifier.height(4.dp))
+                it()
             }
+        }
+
+        if (onClick != null) {
+            Spacer(Modifier.width(8.dp))
+            // Приглушённый: стрелка отвечает на «сюда можно нажать» и не
+            // должна тягаться по весу с именем слева от неё.
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
@@ -136,8 +245,8 @@ fun PersonCompactCard(
                 imagePikerState = UiImagePicker(avaUrl),
                 size = COMPACT_AVATAR_SIZE,
                 avatarSeed = nick,
+                onImageClicked = onClick ?: {},
                 avatarName = name.ifBlank { nick },
-                onImageClicked = onClick ?: {}
             )
 
             Spacer(Modifier.height(8.dp))

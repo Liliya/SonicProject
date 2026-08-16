@@ -112,15 +112,14 @@ fun DisplayImage(
                         .align(Alignment.Center)
                 )
 
+                // Обводки у самой фотографии нет: рамку в 1dp уже рисует
+                // внешний `Box`, и вместе они складывались в двойное белое
+                // кольцо — фотография в списке весила заметно больше соседней
+                // монограммы, хотя это одна и та же строка.
                 else -> CoilImage(
                     imageLoader = { getAsyncImageLoader(getPlatformContext()) },
                     modifier = Modifier
                         .clip(shape)
-                        .border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.surface,
-                            shape = shape
-                        )
                         .size(size.dp),
                     imageModel = { data },
                     imageOptions = ImageOptions(
