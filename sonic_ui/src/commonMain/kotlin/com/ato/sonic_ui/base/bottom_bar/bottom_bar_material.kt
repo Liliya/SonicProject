@@ -1,11 +1,14 @@
 package com.ato.sonic_ui.base.bottom_bar
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
@@ -41,6 +44,11 @@ import com.ato.ui_state.base.UiNavBar
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
+/** Пилюля под выбранной вкладкой: у Material 3 она 64×32dp, в макете — плотнее. */
+private val IndicatorWidth = 56.dp
+private val IndicatorHeight = 28.dp
+private val NavIconSize = 24.dp
+
 /**
  * Нижняя навигация.
  *
@@ -51,6 +59,10 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
  * - высота была жёстко 64dp, и при системном увеличении шрифта подпись
  *   обрезалась; теперь высота своя у `NavigationBar`;
  * - цвета брались из `LocalContentColor` с альфой, вместо ролей темы.
+ *
+ * Пилюля рисуется своя, а материаловская гасится прозрачным цветом: её размер
+ * зашит в токены `NavigationBarTokens` и параметром не задаётся, а нужный по
+ * макету размер меньше стандартного.
  */
 @Composable
 fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
@@ -70,22 +82,37 @@ fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
                 selected = item.isSelected,
                 onClick = { onClick(index) },
                 icon = {
-                    Box {
-                        item.icon.Display(
-                            // Подпись уже читается скринридером, поэтому иконку
-                            // отдельно озвучивать не нужно.
-                            tint = LocalContentColor.current,
-                            selected = item.isSelected,
-                        )
-                        // Значок висит над правым верхним углом иконки, а не
-                        // внутри неё: пилюля выделения обводит именно иконку, и
-                        // значок под ней на выбранной вкладке было бы не видно.
-                        CountBadge(
-                            count = item.badgeCount,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = 10.dp, y = (-4).dp),
-                        )
+                    Box(
+                        modifier = Modifier
+                            .size(width = IndicatorWidth, height = IndicatorHeight)
+                            .background(
+                                color = if (item.isSelected) {
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                } else {
+                                    Color.Transparent
+                                },
+                                shape = CircleShape,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box {
+                            item.icon.Display(
+                                modifier = Modifier.size(NavIconSize),
+                                // Подпись уже читается скринридером, поэтому иконку
+                                // отдельно озвучивать не нужно.
+                                tint = LocalContentColor.current,
+                                selected = item.isSelected,
+                            )
+                            // Значок висит над правым верхним углом иконки, а не
+                            // внутри неё: пилюля выделения обводит именно иконку, и
+                            // значок под ней на выбранной вкладке было бы не видно.
+                            CountBadge(
+                                count = item.badgeCount,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 10.dp, y = (-4).dp),
+                            )
+                        }
                     }
                 },
                 label = label?.let {
@@ -98,11 +125,16 @@ fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
                 },
                 alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    // Выбранная вкладка — бренд-цвет на своём бледном контейнере
+                    // (в светлой теме 6.5:1, в тёмной 6:1). Было `onSecondaryContainer`
+                    // и `onSurface`, то есть чёрным по зелёному: выбранная вкладка
+                    // отличалась от остальных только фоном пилюли.
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                    // Пилюля своя, см. Box в слоте icon.
+                    indicatorColor = Color.Transparent,
                 )
             )
         }
