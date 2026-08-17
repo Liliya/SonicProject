@@ -28,7 +28,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ato.sonic_ui.base.button.DisplayButton
@@ -205,18 +204,14 @@ fun DisplayAppBarTitle(
     onClick: () -> Unit = {},
     onBackClicked: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
-    buttonTestTag: String? = null,
-    spaceTop: Dp = TITLE_LINE_SPACE_TOP,
-    spaceBottom: Dp = TITLE_LINE_SPACE_BOTTOM,
+    buttonTestTag: String? = null
 ) {
     DisplayTitleUnified(
         title = stringResource(state.title),
         onClick = onClick,
         onBackClicked = onBackClicked,
         button = state.button,
-        buttonTestTag = buttonTestTag,
-        spaceTop = spaceTop,
-        spaceBottom = spaceBottom,
+        buttonTestTag = buttonTestTag
     )
 }
 
@@ -227,17 +222,7 @@ fun DisplayTitleUnified(
     onBackClicked: (() -> Unit)? = null,
     button: Button? = null,
     modifier: Modifier = Modifier,
-    buttonTestTag: String? = null,
-    /**
-     * Воздух вокруг линейки под заголовком.
-     *
-     * Параметрами, потому что расстояние от линейки до содержимого зависит от
-     * содержимого: список карточек со своими полями и сплошной текст отбиваются
-     * от неё по-разному. Значения по умолчанию — прежние, поэтому экраны,
-     * которые ничего не передают, выглядят как раньше.
-     */
-    spaceTop: Dp = TITLE_LINE_SPACE_TOP,
-    spaceBottom: Dp = TITLE_LINE_SPACE_BOTTOM,
+    buttonTestTag: String? = null
 ) {
     Spacer(modifier = Modifier.height(24.dp))
     Row(
@@ -279,13 +264,9 @@ fun DisplayTitleUnified(
     }
 
     HorizontalSpaceLine(
-        spaceTop = spaceTop,
+        spaceTop = 8.dp,
         line = 0.5.dp,
         lineColor = MaterialTheme.colorScheme.outlineVariant,
-        spaceBottom = spaceBottom
+        spaceBottom = 16.dp
     )
 }
-
-/** Прежние отступы вокруг линейки — умолчание для всех экранов. */
-private val TITLE_LINE_SPACE_TOP = 8.dp
-private val TITLE_LINE_SPACE_BOTTOM = 16.dp

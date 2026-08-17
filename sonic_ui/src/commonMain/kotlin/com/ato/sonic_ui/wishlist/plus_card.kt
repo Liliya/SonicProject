@@ -12,10 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -30,24 +27,9 @@ fun CenteredIconCard(
      * для него — безымянная кнопка.
      */
     contentDescription: String? = null,
-    /**
-     * Форма карточки. По умолчанию — та, что даёт `Card`, чтобы прежние вызовы
-     * не изменились; передаётся там, где кнопка стоит рядом с чем-то своей
-     * формы и обязана с ним рифмоваться.
-     */
-    shape: Shape = CardDefaults.shape,
-    /**
-     * Размер значка. Он не выводится из размера карточки: у одной и той же
-     * кнопки 48dp значок может быть и крупным (главное действие), и мелким
-     * (второстепенное), а угадывать это по площади — значит менять смысл при
-     * каждой правке размера.
-     */
-    iconSize: Dp = 24.dp,
-    tint: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Card(
         modifier = modifier,
-        shape = shape,
         elevation = elevation,
         colors = colors,
         onClick = onClick
@@ -59,8 +41,8 @@ fun CenteredIconCard(
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                modifier = Modifier.size(iconSize),
-                tint = tint
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }

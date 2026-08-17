@@ -1,18 +1,15 @@
 package com.ato.sonic_ui.wishlist
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
@@ -26,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ato.sonic_ui.base.badge.LabelBadge
 import com.ato.sonic_ui.base.card.paperCardBorder
 import com.ato.sonic_ui.base.card.paperCardColor
@@ -38,67 +34,38 @@ import com.ato.ui_state.wishlist.UiBoard
 /**
  * Обложка доски.
  *
- * Крупнее прежних 44dp: картинка — это то, по чему доску узнают в списке, и
- * отличать «Дом» от «Дня рождения» приходилось по подписи, а не по ней. На
- * 56dp у карточки появляется и внятная высота — раньше она держалась на
- * вертикальных полях, и ряд карточек читался как полосатый фон.
- */
-private val COVER_SIZE = 80.dp
-
-/**
- * Скругление обложки — 18dp, вне шкалы `MaterialTheme.shapes`.
+ * Крупнее аватарки человека (32dp) — картинка сложнее лица и на кружке в
+ * тридцать две точки от неё остаётся пятно, — но той же сетки: список досок и
+ * список друзей должны читаться как один экран, набранный одной рукой.
  *
- * Шкала даёт 12 (`small`) и 16 (`medium`), и обложка размером 80dp на обоих
- * читается иначе, чем задумано: на 12 угол выглядит почти прямым, на 16 —
- * повторяет угол самой карточки, и картинка перестаёт быть отдельным объектом
- * внутри неё. Значение из макета, поэтому и стоит числом.
+ * До этого здесь было 80dp по макету, и карточка занимала шестую часть экрана:
+ * на телефон влезало четыре доски.
  */
-private val COVER_RADIUS = 18.dp
+private val COVER_SIZE = 48.dp
 
-/** Зазор между обложкой и текстом. */
+/** Зазор между обложкой и текстом. Столько же держит карточка человека. */
 private val MEDIA_GAP = 12.dp
 
-/** Поля внутри карточки. */
-private val ROW_INSET = 16.dp
+/** Поля внутри карточки по горизонтали — как у карточки человека. */
+private val ROW_INSET = 12.dp
 
 /**
- * Высота карточки — нижняя граница, а не точный размер.
- *
- * Обложка с полями даёт ровно её: 80 + 16 + 16 = 112. Но на своей доске под
- * счётчиком стоит ещё ряд пометок, и текстовая колонка выходит выше обложки —
- * такая карточка станет примерно 124dp. Жёсткая высота обрезала бы пометки,
- * поэтому предел минимальный: карточки без пометок держат 112, с пометками
- * растут ровно на то, что в них добавилось.
+ * Поля по вертикали. Меньше горизонтальных: высоту здесь задаёт обложка, а не
+ * они, и лишние точки сверху и снизу только отодвигают соседние карточки.
  */
-private val CARD_MIN_HEIGHT = 112.dp
+private val ROW_VERTICAL_INSET = 10.dp
 
-/** Кнопка «плюс» справа. */
-private val ADD_BUTTON_SIZE = 64.dp
-private val ADD_BUTTON_RADIUS = 20.dp
-private val ADD_ICON_SIZE = 26.dp
+/** Кнопка «плюс» справа. 48dp — минимальная цель для пальца, ниже нельзя. */
+private val ADD_BUTTON_SIZE = 48.dp
 
-/** Зазор между пометками в ряду. */
+/** Зазор между названием и пометкой «основная» справа от него. */
 private val BADGE_GAP = 6.dp
 
-/** Зазор между названием и счётчиком. */
-private val TITLE_GAP = 4.dp
+/** Зазор между строками в текстовой колонке. */
+private val LINE_GAP = 2.dp
 
 /**
- * Кегль названия и счётчика — поверх шкалы, значениями из макета.
- *
- * `titleMedium` даёт 16sp, `bodySmall` — 12sp, и на карточке высотой 112dp с
- * обложкой 80dp текст такого размера теряется рядом с картинкой. От стилей
- * берутся семейство и начертание (`titleMedium` уже SemiBold), меняется только
- * размер — вместе с межстрочным: `titleMedium` держит `lineHeight` 24sp, и
- * оставить его при кегле 24sp значило бы прижать строку к самой себе.
- */
-private val TITLE_TEXT_SIZE = 24.sp
-private val TITLE_TEXT_LINE = 32.sp
-private val COUNT_TEXT_SIZE = 17.sp
-private val COUNT_TEXT_LINE = 22.sp
-
-/**
- * Строка доски в списке: обложка, название, счётчик и пометки.
+ * Строка доски в списке: обложка, название, счётчик и кому доска видна.
  *
  * Оформлена «листом бумаги» ([paperCardColor], [paperCardBorder]) — как
  * карточка человека и карточки на «Подарю». До этого доска была залита
@@ -107,15 +74,22 @@ private val COUNT_TEXT_LINE = 22.sp
  * доске же нажимают всегда — это единственный способ её открыть, — и она
  * выглядела единственным нажимаемым элементом, притворяющимся ненажимаемым.
  *
- * Пометки ([UiBoard.mainBadge], [UiBoard.privacy]) стоят пилюлями под
- * счётчиком, а не строкой с иконкой: их две, они об одном и том же — о
- * свойствах доски, — и одинаковая форма говорит это сама. Обе необязательны и
- * приходят только со своих досок, поэтому на странице человека карточка
- * остаётся ровно тем, чем была: обложка, название, счётчик.
+ * Размеры — по карточке человека: та же сетка, те же поля, тот же кегль. Доска
+ * несёт на строку больше, поэтому карточка выходит выше, но не в полтора раза,
+ * как было по макету, — там обложка 80dp занимала шестую часть экрана.
  *
- * Кнопка «+» намеренно осталась внутри карточки, рядом с названием: на экране
- * своих досок это самое частое действие, и уносить его в меню — значит менять
- * два касания на три.
+ * Две пометки, и нарочно разные на вид. [UiBoard.mainBadge] — пилюля справа от
+ * названия: это ярлык, приклеенный к доске, и стоит он там же, где ярлыки
+ * ставят. [UiBoard.privacy] — обычная строка под счётчиком: видимость это не
+ * ярлык, а свойство со значением, и в пилюле оно читалось как тег «Всем», из
+ * которого не понять, всем чего. Строка «Видно всем» говорит это словами.
+ *
+ * Обе необязательны и приходят только со своих досок, поэтому на странице
+ * человека карточка остаётся обложкой, названием и счётчиком.
+ *
+ * Кнопка «+» намеренно осталась внутри карточки: на экране своих досок это
+ * самое частое действие, и уносить его в меню — значит менять два касания на
+ * три.
  */
 @Composable
 fun DisplayBoard(
@@ -135,8 +109,7 @@ fun DisplayBoard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = CARD_MIN_HEIGHT)
-                .padding(horizontal = ROW_INSET, vertical = ROW_INSET),
+                .padding(horizontal = ROW_INSET, vertical = ROW_VERTICAL_INSET),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Раньше здесь был эмодзи на прозрачном кружке: без подложки и без
@@ -145,7 +118,7 @@ fun DisplayBoard(
                 value = data.board?.emoji,
                 seed = data.board?.documentId,
                 size = COVER_SIZE,
-                shape = RoundedCornerShape(COVER_RADIUS),
+                shape = MaterialTheme.shapes.small,
             )
 
             Spacer(modifier = Modifier.width(MEDIA_GAP))
@@ -153,32 +126,49 @@ fun DisplayBoard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                // Название доски — заголовок, а не абзац текста: `bodyLarge`
-                // ставил его вровень со счётчиком под ним, и список читался
-                // одинаково серым.
-                DisplayText(
-                    state = data.boardName,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = TITLE_TEXT_SIZE,
-                        lineHeight = TITLE_TEXT_LINE,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Название доски — заголовок, а не абзац текста:
+                    // `bodyLarge` ставил его вровень со счётчиком под ним, и
+                    // список читался одинаково серым.
+                    //
+                    // `fill = false`: название занимает столько, сколько ему
+                    // нужно, и пилюля стоит сразу за ним. С `fill = true` она
+                    // уезжала к правому краю, и у коротких названий между ними
+                    // зияла дырка.
+                    DisplayText(
+                        state = data.boardName,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
 
-                Spacer(modifier = Modifier.height(TITLE_GAP))
+                    data.mainBadge?.let {
+                        Spacer(modifier = Modifier.width(BADGE_GAP))
+                        LabelBadge(text = it)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(LINE_GAP))
 
                 DisplayText(
                     state = data.boardWishCount,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = COUNT_TEXT_SIZE,
-                        lineHeight = COUNT_TEXT_LINE,
-                    ),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                BoardBadges(data)
+                // Видимость — строкой, не пилюлей: см. описание выше.
+                data.privacy?.let {
+                    Spacer(modifier = Modifier.height(LINE_GAP))
+                    DisplayText(
+                        state = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
             if (onAddClicked != null) {
@@ -192,9 +182,8 @@ fun DisplayBoard(
                     icon = Icons.Filled.Add,
                     onClick = onAddClicked,
                     contentDescription = addContentDescription,
-                    shape = RoundedCornerShape(ADD_BUTTON_RADIUS),
-                    iconSize = ADD_ICON_SIZE,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    // Было 40dp — ниже минимума в 48dp, из-за чего в том числе
+                    // промахивались UI-тесты.
                     modifier = Modifier
                         .size(ADD_BUTTON_SIZE)
                         .let { if (addButtonTestTag != null) it.testTag(addButtonTestTag) else it }
@@ -207,24 +196,22 @@ fun DisplayBoard(
 /**
  * Заглушка [DisplayBoard] на время загрузки — той же формы и той же высоты.
  *
- * Общая `SkeletonCard` здесь больше не годится: у неё кружок 48dp и поля 20/16,
- * то есть геометрия прежней карточки доски. Обложка же теперь квадрат со
- * скруглением, и разница в высоте — те самые несколько точек, на которые список
- * дёргается ровно в тот момент, ради которого заглушка и рисуется.
+ * Общая `SkeletonCard` здесь не годится: у неё кружок и поля 20/16, то есть
+ * своя геометрия. Обложка доски — квадрат со скруглением, и разница в высоте это
+ * те самые несколько точек, на которые список дёргается ровно в тот момент,
+ * ради которого заглушка и рисуется.
  *
- * Двух строк достаточно, хотя своя доска покажет ещё и ряд пометок: на холодном
- * старте неизвестно, чьи это доски, а высоту карточки задаёт обложка — она выше
- * трёх строк текста.
- *
- * @param hasAction рисовать ли справа заглушку кнопки. Пометки на заглушке
- *   можно не угадывать — высота от них не зависит, — а вот кнопка занимает
- *   место, и на чужих досках, где её нет, пустой квадрат обещал бы действие,
- *   которого на карточке не появится.
+ * @param own заглушка своей доски или чужой. Один флаг на два отличия, потому
+ *   что оба следуют из одного: на своей доске есть кнопка «плюс» и строка
+ *   видимости, на чужой — ни того, ни другого. Кнопка занимает место по
+ *   горизонтали, строка — по вертикали, и без флага заглушка своих досок
+ *   оказывалась на двенадцать точек ниже них, а на чужих обещала кнопку,
+ *   которой не появится.
  */
 @Composable
 fun BoardCardSkeleton(
     modifier: Modifier = Modifier,
-    hasAction: Boolean = true,
+    own: Boolean = true,
 ) {
     Card(
         modifier = modifier,
@@ -236,33 +223,42 @@ fun BoardCardSkeleton(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = CARD_MIN_HEIGHT)
-                .padding(horizontal = ROW_INSET, vertical = ROW_INSET),
+                .padding(horizontal = ROW_INSET, vertical = ROW_VERTICAL_INSET),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SkeletonBlock(
                 modifier = Modifier.size(COVER_SIZE),
-                shape = RoundedCornerShape(COVER_RADIUS),
+                shape = MaterialTheme.shapes.small,
             )
             Spacer(Modifier.width(MEDIA_GAP))
             Column(modifier = Modifier.weight(1f)) {
+                // Высоты блоков — межстрочные интервалы тех же стилей, какими
+                // набраны настоящие строки: 24 у titleMedium, 16 у bodySmall.
                 SkeletonBlock(
                     modifier = Modifier
                         .fillMaxWidth(0.55f)
                         .height(24.dp)
                 )
-                Spacer(Modifier.height(TITLE_GAP))
+                Spacer(Modifier.height(LINE_GAP))
                 SkeletonBlock(
                     modifier = Modifier
                         .fillMaxWidth(0.3f)
-                        .height(17.dp)
+                        .height(16.dp)
                 )
+                if (own) {
+                    Spacer(Modifier.height(LINE_GAP))
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.45f)
+                            .height(16.dp)
+                    )
+                }
             }
-            if (hasAction) {
+            if (own) {
                 Spacer(Modifier.width(MEDIA_GAP))
                 SkeletonBlock(
                     modifier = Modifier.size(ADD_BUTTON_SIZE),
-                    shape = RoundedCornerShape(ADD_BUTTON_RADIUS),
+                    shape = MaterialTheme.shapes.medium,
                 )
             }
         }
@@ -276,11 +272,11 @@ fun BoardCardSkeleton(
  * вокруг не похоже, ни к чему не привязано, и на экране с восемью досками
  * читалось как случайно оставшийся элемент. Теперь это строка того же списка —
  * тот же «лист бумаги», те же поля, плюс на месте обложки, — и список
- * заканчивается тем же, чем состоит.
+ * заканчивается тем же, из чего состоит.
  *
- * Ниже карточек с досками: 72dp против 112dp. Здесь нет ни счётчика, ни
- * пометок, и держать полную высоту не на чем — пустая карточка выглядела бы
- * недогруженной, а не просторной.
+ * Ниже карточек с досками: здесь нет ни счётчика, ни видимости, и держать их
+ * высоту не на чем — пустая карточка выглядела бы недогруженной, а не
+ * просторной.
  */
 @Composable
 fun AddBoardCard(
@@ -299,19 +295,18 @@ fun AddBoardCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(ADD_CARD_HEIGHT)
-                .padding(horizontal = ROW_INSET),
+                .padding(horizontal = ROW_INSET, vertical = ROW_VERTICAL_INSET),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Плюс стоит на месте обложки и того же скругления, что кнопка «+»
-            // на карточке доски: два действия «добавить» на одном экране должны
+            // Плюс стоит на месте обложки и той же формы, что кнопка «+» на
+            // карточке доски: два действия «добавить» на одном экране должны
             // выглядеть одним и тем же действием.
             Box(
                 modifier = Modifier
-                    .size(ADD_CARD_ICON_BOX)
+                    .size(ADD_BUTTON_SIZE)
                     .background(
                         color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(ADD_BUTTON_RADIUS),
+                        shape = MaterialTheme.shapes.medium,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -320,8 +315,8 @@ fun AddBoardCard(
                     // Подпись рядом уже всё сказала — значок для скринридера
                     // повторил бы её вторым голосом.
                     contentDescription = null,
-                    modifier = Modifier.size(ADD_ICON_SIZE),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
@@ -329,55 +324,10 @@ fun AddBoardCard(
 
             Text(
                 text = label,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = COUNT_TEXT_SIZE,
-                    lineHeight = COUNT_TEXT_LINE,
-                ),
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-/** Высота карточки «новая доска». */
-private val ADD_CARD_HEIGHT = 72.dp
-
-/** Квадрат с плюсом внутри неё — по высоте карточки минус поля. */
-private val ADD_CARD_ICON_BOX = 48.dp
-
-/**
- * Ряд пометок под счётчиком — или ничего, если пометок нет.
- *
- * Отступ сверху рисуется здесь, а не в карточке: пустой ряд оставил бы после
- * счётчика воздух, которому нечего разделять, и карточки чужих досок стали бы
- * на несколько точек выше своих без всякой причины.
- */
-@Composable
-private fun BoardBadges(data: UiBoard) {
-    val main = data.mainBadge
-    val privacy = data.privacy
-
-    if (main == null && privacy == null) return
-
-    Spacer(modifier = Modifier.height(BADGE_GAP))
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(BADGE_GAP),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // «Основная» идёт первой: это свойство самой доски, а приватность —
-        // настройка, которую владелец меняет. Цветом они не различаются
-        // намеренно — см. LabelBadge.
-        main?.let { LabelBadge(text = it) }
-
-        // `fill = false` и `weight`: пометка сжимается до многоточия, если
-        // перевод не влез, вместо того чтобы вытолкнуть соседнюю за край.
-        privacy?.let {
-            LabelBadge(
-                text = it,
-                modifier = Modifier.weight(1f, fill = false),
             )
         }
     }
