@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ato.sonic_ui.base.card.paperCardBorder
+import com.ato.sonic_ui.base.card.paperCardColor
 import com.ato.sonic_ui.base.image.DisplayImage
 import com.ato.sonic_ui.base.image.WishPicture
 import com.ato.sonic_ui.base.text.LinkPreview
@@ -34,6 +37,13 @@ fun DisplayFullWish(
 ) {
     Card(
         modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        // Как и строка желания в списке — «лист бумаги» вместо серой заливки
+        // по умолчанию. Экран желания открывается прямо из списка, и карточка,
+        // меняющая цвет на переходе, читается как другой объект.
+        colors = CardDefaults.cardColors(containerColor = paperCardColor()),
+        border = paperCardBorder(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier
