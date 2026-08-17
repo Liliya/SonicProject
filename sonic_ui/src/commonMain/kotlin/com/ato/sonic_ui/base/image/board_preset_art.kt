@@ -1,48 +1,55 @@
 package com.ato.sonic_ui.base.image
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.luminance
 import com.ato.ui_state.base.image.BoardPresets
 
 /**
  * Как выглядят двенадцать встроенных картинок досок из [BoardPresets].
  *
- * Те же правила, что у аватарок в `avatar_preset_art.kt`, и намеренно: доски и
- * профили должны выглядеть сделанными одной рукой.
+ * Те же правила, что у аватарок, и намеренно: доски и профили должны выглядеть
+ * сделанными одной рукой.
  *
- * - рисуются на [Canvas], потому что одна и та же картинка нужна и на 40dp в
- *   списке досок, и на 56dp в шапке, а растр под каждый размер — это файлы в
+ * - рисуются на [Canvas], потому что одна и та же картинка нужна и на 48dp в
+ *   списке досок, и на 96dp в шапке, а растр под каждый размер — это файлы в
  *   каждой плотности на каждую из двенадцати штук;
  *   [androidx.compose.ui.graphics.vector.ImageVector] тоже не подходит: в этом
- *   проекте это одноцветные значки (`MyIconPack`), под градиентную подложку он
- *   не заточен;
- * - подложка глубокая у всех двенадцати, а предмет всегда одного цвета
- *   ([GLYPH_COLOR]): контраст не зависит от того, какая картинка досталась, и
- *   не разъезжается между светлой и тёмной темой.
+ *   проекте это одноцветные значки (`MyIconPack`), под цветную подложку он не
+ *   заточен;
+ * - подложка бледная, предмет — насыщенный того же оттенка. Так обложка
+ *   остаётся фоном для предмета, а не пятном рядом с ним.
  *
- * Разница с аватарками одна: там пять силуэтов про людей и праздник, здесь
- * шесть предметов, по которым доску узнают в списке — подарок, дом, торт,
- * книга, самолёт, чашка.
+ * Сначала подложки были глубокие, а предмет — один и тот же тёплый белый: тогда
+ * контраст не зависел от того, какая картинка досталась. Но в списке двенадцать
+ * насыщенных квадратов забивали и названия досок рядом, и настоящие фотографии
+ * тех досок, которым владелец картинку выбрал, — а фотография всегда важнее
+ * заглушки. Ровно этот же разговор был у аватарок, и там он кончился шестью
+ * пастельными тонами в `monogram.kt`; здесь те же шесть плюс ещё шесть в том же
+ * регистре, потому что предметов шесть и каждому нужны две разные подложки.
+ *
+ * И тема теперь важна. Глубокая подложка была одинаковой в светлой и тёмной —
+ * как настоящая фотография, которая не подкрашивается. Бледная так не может:
+ * шесть светлых квадратов на тёмном экране светились бы фонариками. Отсюда два
+ * набора, вывернутых друг относительно друга, — тоже как у монограмм.
  */
 
-/** Тёплый белый вместо чистого: на цветной подложке он не режет глаз. */
-private val GLYPH_COLOR = Color(0xFFFFFDF8)
-
 private class BoardPresetArt(
-    val top: Color,
-    val bottom: Color,
+    val background: Color,
+    /** Цвет предмета: тот же оттенок, что подложка, но насыщенный. */
+    val ink: Color,
     val glyph: DrawScope.(Float, Color, Color) -> Unit,
 )
 
@@ -50,21 +57,56 @@ private class BoardPresetArt(
  * Шесть предметов на двенадцать палитр. Шесть, а не двенадцать: один и тот же
  * предмет на разных подложках различается с одного взгляда, а двенадцать разных
  * силуэтов в одном списке читаются как свалка.
+ *
+ * Порядок не случаен: предметы идут по кругу, поэтому пары с одним силуэтом —
+ * это 0 и 6, 1 и 7 и так далее. Их оттенки нарочно разведены далеко (терракота
+ * и небо, роза и мята), иначе два подарка в одном списке пришлось бы различать
+ * по полутону.
+ *
+ * Первые шесть — те же тона, что у монограмм в `monogram.kt`, остальные шесть
+ * добавлены в том же регистре. Измеренный контраст предмета к подложке: от
+ * 7.8:1 в светлой теме и от 8.3:1 в тёмной. Для сплошной фигуры хватило бы и
+ * 3:1, но предмет здесь тонкий в деталях — прорезь ленты, ручка чашки, — и на
+ * трёх единицах они пропадают первыми.
  */
-private val BOARD_PRESET_ART: List<BoardPresetArt> = listOf(
-    BoardPresetArt(Color(0xFF2E7D5B), Color(0xFF1B5E3F), DrawScope::drawBoardGift),
-    BoardPresetArt(Color(0xFFE07A5F), Color(0xFFC75B41), DrawScope::drawBoardHouse),
-    BoardPresetArt(Color(0xFF5B7DB1), Color(0xFF3D5A8A), DrawScope::drawBoardCake),
-    BoardPresetArt(Color(0xFFB5838D), Color(0xFF8E5A6B), DrawScope::drawBoardBook),
-    BoardPresetArt(Color(0xFFD9A441), Color(0xFFB87C2A), DrawScope::drawBoardPlane),
-    BoardPresetArt(Color(0xFF6D9773), Color(0xFF4A7856), DrawScope::drawBoardCup),
-    BoardPresetArt(Color(0xFF8E7CC3), Color(0xFF6A55A0), DrawScope::drawBoardGift),
-    BoardPresetArt(Color(0xFF4FA3A5), Color(0xFF2F7C80), DrawScope::drawBoardHouse),
-    BoardPresetArt(Color(0xFFC96A8B), Color(0xFFA24A6C), DrawScope::drawBoardCake),
-    BoardPresetArt(Color(0xFF7A8B99), Color(0xFF566873), DrawScope::drawBoardBook),
-    BoardPresetArt(Color(0xFF9C6644), Color(0xFF7A4A2E), DrawScope::drawBoardPlane),
-    BoardPresetArt(Color(0xFF4A6FA5), Color(0xFF2F4C77), DrawScope::drawBoardCup),
+private val LightArt: List<BoardPresetArt> = listOf(
+    BoardPresetArt(Color(0xFFEDD7CB), Color(0xFF5F2C16), DrawScope::drawBoardGift),   // терракота
+    BoardPresetArt(Color(0xFFEDD4D8), Color(0xFF5F2B37), DrawScope::drawBoardHouse),  // пыльная роза
+    BoardPresetArt(Color(0xFFD6E3D7), Color(0xFF2A4531), DrawScope::drawBoardCake),   // шалфей
+    BoardPresetArt(Color(0xFFDCD8EC), Color(0xFF362D59), DrawScope::drawBoardBook),   // лаванда
+    BoardPresetArt(Color(0xFFDBDBDD), Color(0xFF303035), DrawScope::drawBoardPlane),  // графит
+    BoardPresetArt(Color(0xFFEBDFCB), Color(0xFF4C3A1F), DrawScope::drawBoardCup),    // тёплый беж
+    BoardPresetArt(Color(0xFFD5E1F0), Color(0xFF26405F), DrawScope::drawBoardGift),   // небо
+    BoardPresetArt(Color(0xFFD0E6E1), Color(0xFF204742), DrawScope::drawBoardHouse),  // мята
+    BoardPresetArt(Color(0xFFE6D6E8), Color(0xFF4B2D52), DrawScope::drawBoardCake),   // слива
+    BoardPresetArt(Color(0xFFE0E4CC), Color(0xFF3C4522), DrawScope::drawBoardBook),   // олива
+    BoardPresetArt(Color(0xFFE4D9D1), Color(0xFF4B3A2F), DrawScope::drawBoardPlane),  // какао
+    BoardPresetArt(Color(0xFFD6E2E6), Color(0xFF27414A), DrawScope::drawBoardCup),    // лёд
 )
+
+/**
+ * То же самое для тёмной темы, вывернутое наизнанку: подложка приглушена почти
+ * до фона экрана, предмет — светлый.
+ */
+private val DarkArt: List<BoardPresetArt> = listOf(
+    BoardPresetArt(Color(0xFF4A3229), Color(0xFFF7D2BF), DrawScope::drawBoardGift),
+    BoardPresetArt(Color(0xFF4A3034), Color(0xFFF7CFD6), DrawScope::drawBoardHouse),
+    BoardPresetArt(Color(0xFF2C3B2F), Color(0xFFCBE3CE), DrawScope::drawBoardCake),
+    BoardPresetArt(Color(0xFF343048), Color(0xFFD8D1F5), DrawScope::drawBoardBook),
+    BoardPresetArt(Color(0xFF35343A), Color(0xFFDBDAE1), DrawScope::drawBoardPlane),
+    BoardPresetArt(Color(0xFF443A2B), Color(0xFFEFDFC1), DrawScope::drawBoardCup),
+    BoardPresetArt(Color(0xFF2A3949), Color(0xFFCFE0F5), DrawScope::drawBoardGift),
+    BoardPresetArt(Color(0xFF26403D), Color(0xFFC7E4DE), DrawScope::drawBoardHouse),
+    BoardPresetArt(Color(0xFF3E2F44), Color(0xFFEBD3EF), DrawScope::drawBoardCake),
+    BoardPresetArt(Color(0xFF383D2B), Color(0xFFDDE3C4), DrawScope::drawBoardBook),
+    BoardPresetArt(Color(0xFF3E332C), Color(0xFFEBDBD0), DrawScope::drawBoardPlane),
+    BoardPresetArt(Color(0xFF2B3B40), Color(0xFFCFE1E7), DrawScope::drawBoardCup),
+)
+
+/** Набор по теме — ровно как `monogramPalette()` у монограмм. */
+@Composable
+private fun boardArt(): List<BoardPresetArt> =
+    if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) LightArt else DarkArt
 
 /**
  * Встроенная картинка доски номер [index].
@@ -78,20 +120,21 @@ fun BoardPresetImage(
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
 ) {
-    val art = BOARD_PRESET_ART[((index % BOARD_PRESET_ART.size) + BOARD_PRESET_ART.size) % BOARD_PRESET_ART.size]
+    val palette = boardArt()
+    val art = palette[((index % palette.size) + palette.size) % palette.size]
 
     Canvas(modifier = modifier.clip(shape)) {
-        drawRect(
-            brush = Brush.linearGradient(
-                colors = listOf(art.top, art.bottom),
-                start = Offset.Zero,
-                end = Offset(size.width, size.height),
-            )
-        )
+        // Заливка ровная, без градиента. Градиент был при глубоких подложках и
+        // достался им от прежних двухстоповых кружков; на бледном тоне он не
+        // виден вовсе, а два близких цвета вместо одного — это два места, где
+        // палитра может разойтись.
+        drawRect(color = art.background)
 
         val side = size.minDimension * 0.46f
         translate(left = (size.width - side) / 2f, top = (size.height - side) / 2f) {
-            art.glyph(this, side, GLYPH_COLOR, art.bottom)
+            // Вырезы внутри предмета идут цветом подложки: своим цветом они
+            // слились бы с ним самим.
+            art.glyph(this, side, art.ink, art.background)
         }
     }
 }
