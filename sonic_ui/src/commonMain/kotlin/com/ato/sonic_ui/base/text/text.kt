@@ -19,6 +19,19 @@ fun DisplayText(
     fontSize: TextUnit = TextUnit.Unspecified,
     color: Color = Color.Unspecified,
     style: TextStyle = LocalTextStyle.current,
+    /**
+     * Сколько строк разрешено занять. По умолчанию — сколько угодно, как было
+     * до появления параметра: обрезать текст молча нельзя, это решение места
+     * вызова.
+     *
+     * Нужен там, где строка стоит в ряду с чем-то ещё и обязана держать высоту
+     * — например название доски в карточке списка, рядом с которым справа
+     * бейдж: без ограничения длинное название переносилось на три строки и
+     * карточка вырастала выше соседних.
+     */
+    maxLines: Int = Int.MAX_VALUE,
+    /** Что делать с тем, что не влезло. Многоточие имеет смысл при [maxLines]. */
+    overflow: TextOverflow = TextOverflow.Clip,
     modifier: Modifier = Modifier
 ) {
     val title = if (state.formatArgs == null) {
@@ -32,6 +45,8 @@ fun DisplayText(
         fontWeight = fontWeight,
         color = color,
         fontSize = fontSize,
+        maxLines = maxLines,
+        overflow = overflow,
         modifier = modifier,
         style = style
     )
