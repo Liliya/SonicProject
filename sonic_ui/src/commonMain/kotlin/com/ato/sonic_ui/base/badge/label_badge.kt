@@ -2,12 +2,15 @@ package com.ato.sonic_ui.base.badge
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ato.sonic_ui.base.text.DisplayText
 import com.ato.ui_state.base.text.UiSimpleText
 
@@ -39,20 +42,38 @@ fun LabelBadge(
 ) {
     Box(
         modifier = modifier
+            .height(BADGE_HEIGHT)
             .background(
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 shape = MaterialTheme.shapes.extraSmall,
             )
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(horizontal = BADGE_INSET),
+        contentAlignment = Alignment.Center,
     ) {
         // Одна строка и многоточие: пилюля стоит в ряду с другими, и перевод
         // подлиннее английского не должен превращать ряд пометок в абзац.
         DisplayText(
             state = text,
-            style = MaterialTheme.typography.labelSmall,
+            // Кегль задан поверх `labelSmall`, у которого 11sp: пилюля стоит
+            // под счётчиком в 17sp, и на одиннадцати она читалась как сноска, а
+            // не как часть карточки. От стиля берётся начертание и семейство —
+            // размер здесь диктует карточка, а не шкала.
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = BADGE_TEXT_SIZE,
+                lineHeight = BADGE_TEXT_LINE,
+            ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
     }
 }
+
+/** Высота пилюли. Задана явно, чтобы ряд пометок держал ровную линию. */
+private val BADGE_HEIGHT = 28.dp
+
+/** Поля по горизонтали. По вертикали их нет — высота фиксированная. */
+private val BADGE_INSET = 12.dp
+
+private val BADGE_TEXT_SIZE = 15.sp
+private val BADGE_TEXT_LINE = 20.sp

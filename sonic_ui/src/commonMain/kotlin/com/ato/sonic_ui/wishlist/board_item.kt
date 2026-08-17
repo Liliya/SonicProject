@@ -1,25 +1,32 @@
 package com.ato.sonic_ui.wishlist
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ato.sonic_ui.base.badge.LabelBadge
 import com.ato.sonic_ui.base.card.paperCardBorder
 import com.ato.sonic_ui.base.card.paperCardColor
@@ -36,16 +43,59 @@ import com.ato.ui_state.wishlist.UiBoard
  * 56dp у карточки появляется и внятная высота — раньше она держалась на
  * вертикальных полях, и ряд карточек читался как полосатый фон.
  */
-private val COVER_SIZE = 56.dp
+private val COVER_SIZE = 80.dp
 
-/** Зазор между обложкой и текстом. Столько же держит карточка человека. */
+/**
+ * Скругление обложки — 18dp, вне шкалы `MaterialTheme.shapes`.
+ *
+ * Шкала даёт 12 (`small`) и 16 (`medium`), и обложка размером 80dp на обоих
+ * читается иначе, чем задумано: на 12 угол выглядит почти прямым, на 16 —
+ * повторяет угол самой карточки, и картинка перестаёт быть отдельным объектом
+ * внутри неё. Значение из макета, поэтому и стоит числом.
+ */
+private val COVER_RADIUS = 18.dp
+
+/** Зазор между обложкой и текстом. */
 private val MEDIA_GAP = 12.dp
 
-/** Поля внутри карточки — как у карточки человека в списках. */
-private val ROW_INSET = 12.dp
+/** Поля внутри карточки. */
+private val ROW_INSET = 16.dp
 
-/** Зазор между пометками в ряду и между пометкой и названием. */
+/**
+ * Высота карточки — нижняя граница, а не точный размер.
+ *
+ * Обложка с полями даёт ровно её: 80 + 16 + 16 = 112. Но на своей доске под
+ * счётчиком стоит ещё ряд пометок, и текстовая колонка выходит выше обложки —
+ * такая карточка станет примерно 124dp. Жёсткая высота обрезала бы пометки,
+ * поэтому предел минимальный: карточки без пометок держат 112, с пометками
+ * растут ровно на то, что в них добавилось.
+ */
+private val CARD_MIN_HEIGHT = 112.dp
+
+/** Кнопка «плюс» справа. */
+private val ADD_BUTTON_SIZE = 64.dp
+private val ADD_BUTTON_RADIUS = 20.dp
+private val ADD_ICON_SIZE = 26.dp
+
+/** Зазор между пометками в ряду. */
 private val BADGE_GAP = 6.dp
+
+/** Зазор между названием и счётчиком. */
+private val TITLE_GAP = 4.dp
+
+/**
+ * Кегль названия и счётчика — поверх шкалы, значениями из макета.
+ *
+ * `titleMedium` даёт 16sp, `bodySmall` — 12sp, и на карточке высотой 112dp с
+ * обложкой 80dp текст такого размера теряется рядом с картинкой. От стилей
+ * берутся семейство и начертание (`titleMedium` уже SemiBold), меняется только
+ * размер — вместе с межстрочным: `titleMedium` держит `lineHeight` 24sp, и
+ * оставить его при кегле 24sp значило бы прижать строку к самой себе.
+ */
+private val TITLE_TEXT_SIZE = 24.sp
+private val TITLE_TEXT_LINE = 32.sp
+private val COUNT_TEXT_SIZE = 17.sp
+private val COUNT_TEXT_LINE = 22.sp
 
 /**
  * Строка доски в списке: обложка, название, счётчик и пометки.
@@ -85,6 +135,7 @@ fun DisplayBoard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = CARD_MIN_HEIGHT)
                 .padding(horizontal = ROW_INSET, vertical = ROW_INSET),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -94,7 +145,7 @@ fun DisplayBoard(
                 value = data.board?.emoji,
                 seed = data.board?.documentId,
                 size = COVER_SIZE,
-                shape = MaterialTheme.shapes.small,
+                shape = RoundedCornerShape(COVER_RADIUS),
             )
 
             Spacer(modifier = Modifier.width(MEDIA_GAP))
@@ -107,17 +158,23 @@ fun DisplayBoard(
                 // одинаково серым.
                 DisplayText(
                     state = data.boardName,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = TITLE_TEXT_SIZE,
+                        lineHeight = TITLE_TEXT_LINE,
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(TITLE_GAP))
 
                 DisplayText(
                     state = data.boardWishCount,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = COUNT_TEXT_SIZE,
+                        lineHeight = COUNT_TEXT_LINE,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
@@ -135,11 +192,11 @@ fun DisplayBoard(
                     icon = Icons.Filled.Add,
                     onClick = onAddClicked,
                     contentDescription = addContentDescription,
-                    // Было 40dp — ниже минимума в 48dp, из-за чего в том числе
-                    // промахивались UI-тесты.
+                    shape = RoundedCornerShape(ADD_BUTTON_RADIUS),
+                    iconSize = ADD_ICON_SIZE,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier
-                        .height(48.dp)
-                        .width(48.dp)
+                        .size(ADD_BUTTON_SIZE)
                         .let { if (addButtonTestTag != null) it.testTag(addButtonTestTag) else it }
                 )
             }
@@ -179,37 +236,116 @@ fun BoardCardSkeleton(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = CARD_MIN_HEIGHT)
                 .padding(horizontal = ROW_INSET, vertical = ROW_INSET),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SkeletonBlock(
                 modifier = Modifier.size(COVER_SIZE),
-                shape = MaterialTheme.shapes.small,
+                shape = RoundedCornerShape(COVER_RADIUS),
             )
             Spacer(Modifier.width(MEDIA_GAP))
             Column(modifier = Modifier.weight(1f)) {
                 SkeletonBlock(
                     modifier = Modifier
                         .fillMaxWidth(0.55f)
-                        .height(16.dp)
+                        .height(24.dp)
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(TITLE_GAP))
                 SkeletonBlock(
                     modifier = Modifier
                         .fillMaxWidth(0.3f)
-                        .height(12.dp)
+                        .height(17.dp)
                 )
             }
             if (hasAction) {
                 Spacer(Modifier.width(MEDIA_GAP))
                 SkeletonBlock(
-                    modifier = Modifier.size(48.dp),
-                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.size(ADD_BUTTON_SIZE),
+                    shape = RoundedCornerShape(ADD_BUTTON_RADIUS),
                 )
             }
         }
     }
 }
+
+/**
+ * Карточка «новая доска» — последняя строка списка.
+ *
+ * До этого действие висело под списком отдельным кружком с подписью: ни на что
+ * вокруг не похоже, ни к чему не привязано, и на экране с восемью досками
+ * читалось как случайно оставшийся элемент. Теперь это строка того же списка —
+ * тот же «лист бумаги», те же поля, плюс на месте обложки, — и список
+ * заканчивается тем же, чем состоит.
+ *
+ * Ниже карточек с досками: 72dp против 112dp. Здесь нет ни счётчика, ни
+ * пометок, и держать полную высоту не на чем — пустая карточка выглядела бы
+ * недогруженной, а не просторной.
+ */
+@Composable
+fun AddBoardCard(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = paperCardColor()),
+        border = paperCardBorder(),
+        elevation = CardDefaults.cardElevation(0.dp),
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ADD_CARD_HEIGHT)
+                .padding(horizontal = ROW_INSET),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Плюс стоит на месте обложки и того же скругления, что кнопка «+»
+            // на карточке доски: два действия «добавить» на одном экране должны
+            // выглядеть одним и тем же действием.
+            Box(
+                modifier = Modifier
+                    .size(ADD_CARD_ICON_BOX)
+                    .background(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(ADD_BUTTON_RADIUS),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    // Подпись рядом уже всё сказала — значок для скринридера
+                    // повторил бы её вторым голосом.
+                    contentDescription = null,
+                    modifier = Modifier.size(ADD_ICON_SIZE),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+
+            Spacer(Modifier.width(MEDIA_GAP))
+
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = COUNT_TEXT_SIZE,
+                    lineHeight = COUNT_TEXT_LINE,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** Высота карточки «новая доска». */
+private val ADD_CARD_HEIGHT = 72.dp
+
+/** Квадрат с плюсом внутри неё — по высоте карточки минус поля. */
+private val ADD_CARD_ICON_BOX = 48.dp
 
 /**
  * Ряд пометок под счётчиком — или ничего, если пометок нет.
