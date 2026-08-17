@@ -7,12 +7,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Card
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import com.ato.sonic_ui.base.badge.LabelBadge
 import com.ato.sonic_ui.base.card.paperCardBorder
 import com.ato.sonic_ui.base.card.paperCardColor
 import com.ato.sonic_ui.base.image.BoardPicture
+import com.ato.sonic_ui.base.skeleton.SkeletonBlock
 import com.ato.sonic_ui.base.text.DisplayText
 import com.ato.ui_state.wishlist.UiBoard
 
@@ -146,6 +148,60 @@ fun DisplayBoard(
 }
 
 /**
+ * Заглушка [DisplayBoard] на время загрузки — той же формы и той же высоты.
+ *
+ * Общая `SkeletonCard` здесь больше не годится: у неё кружок 48dp и поля 20/16,
+ * то есть геометрия прежней карточки доски. Обложка же теперь квадрат со
+ * скруглением, и разница в высоте — те самые несколько точек, на которые список
+ * дёргается ровно в тот момент, ради которого заглушка и рисуется.
+ *
+ * Двух строк достаточно, хотя своя доска покажет ещё и ряд пометок: на холодном
+ * старте неизвестно, чьи это доски, а высоту карточки задаёт обложка — она выше
+ * трёх строк текста.
+ */
+@Composable
+fun BoardCardSkeleton(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = paperCardColor()),
+        border = paperCardBorder(),
+        elevation = CardDefaults.cardElevation(0.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ROW_INSET, vertical = ROW_INSET),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SkeletonBlock(
+                modifier = Modifier.size(COVER_SIZE),
+                shape = MaterialTheme.shapes.small,
+            )
+            Spacer(Modifier.width(MEDIA_GAP))
+            Column(modifier = Modifier.weight(1f)) {
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth(0.55f)
+                        .height(16.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth(0.3f)
+                        .height(12.dp)
+                )
+            }
+            Spacer(Modifier.width(MEDIA_GAP))
+            SkeletonBlock(
+                modifier = Modifier.size(48.dp),
+                shape = MaterialTheme.shapes.small,
+            )
+        }
+    }
+}
+
+/**
  * Ряд пометок под счётчиком — или ничего, если пометок нет.
  *
  * Отступ сверху рисуется здесь, а не в карточке: пустой ряд оставил бы после
@@ -165,16 +221,10 @@ private fun BoardBadges(data: UiBoard) {
         horizontalArrangement = Arrangement.spacedBy(BADGE_GAP),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // «Основная» — единственная выделенная пометка на экране, поэтому
-        // тонированная. Приватность рядом с ней нейтральная: если тонировать
-        // обе, выделенной не окажется ни одна.
-        main?.let {
-            LabelBadge(
-                text = it,
-                container = MaterialTheme.colorScheme.secondaryContainer,
-                content = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-        }
+        // «Основная» идёт первой: это свойство самой доски, а приватность —
+        // настройка, которую владелец меняет. Цветом они не различаются
+        // намеренно — см. LabelBadge.
+        main?.let { LabelBadge(text = it) }
 
         // `fill = false` и `weight`: пометка сжимается до многоточия, если
         // перевод не влез, вместо того чтобы вытолкнуть соседнюю за край.
