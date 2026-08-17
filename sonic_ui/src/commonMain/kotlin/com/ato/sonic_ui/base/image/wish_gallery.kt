@@ -111,17 +111,35 @@ fun WishGallery(
     }
 }
 
-/** Соотношение сторон блока с фотографиями. */
-private const val GALLERY_RATIO = 4f / 3f
+/**
+ * Соотношение сторон блока с фотографиями. `internal` — то же соотношение
+ * держит редактор картинок, иначе просмотр и правка одного и того же желания
+ * кадрировали бы его по-разному.
+ */
+internal const val GALLERY_RATIO = 4f / 3f
 
-private val DOTS_BOTTOM_INSET = 12.dp
+internal val DOTS_BOTTOM_INSET = 12.dp
 
-/** Одна фотография, обрезанная по центру под размер блока. */
+/**
+ * Одна фотография, обрезанная по центру под размер блока.
+ *
+ * Размер задаёт [modifier], а не число, — этим и отличается от [WishPicture],
+ * которая рисует квадрат заданной стороны. Здесь сторону диктует кадр.
+ *
+ * `internal`: тот же кадр показывает редактор картинок, и там у только что
+ * выбранной фотографии ещё нет адреса — одни байты, отсюда [file].
+ */
 @Composable
-private fun WishPhoto(url: String, modifier: Modifier = Modifier) {
+internal fun WishPhoto(
+    url: String?,
+    modifier: Modifier = Modifier,
+    file: ByteArray? = null,
+) {
     CoilImage(
         imageLoader = { getAsyncImageLoader(getPlatformContext()) },
-        imageModel = { url },
+        // Только что выбранный файл важнее адреса: он ещё не уехал в Storage,
+        // а в `url` всё это время лежит прошлое значение.
+        imageModel = { file ?: url },
         imageOptions = ImageOptions(
             contentScale = ContentScale.Crop,
             alignment = Alignment.Center,
@@ -132,6 +150,10 @@ private fun WishPhoto(url: String, modifier: Modifier = Modifier) {
 
 /**
  * Точки под фотографиями: какая страница из скольких.
+ *
+ * `internal`, а не `private`: теми же точками подписан редактор картинок
+ * (`image_gallery_editor.kt`) — там тот же pager, и вторые точки, нарисованные
+ * своей рукой, разошлись бы с этими на первой же правке.
  *
  * Лежат на затемнённой плашке, а не прямо на кадре. Фотографии
  * пользовательские, и белые точки на светлом снегу пропадают ровно так же, как
@@ -144,7 +166,7 @@ private fun WishPhoto(url: String, modifier: Modifier = Modifier) {
  * анимирована, поэтому при свайпе полоска переезжает, а не перескакивает.
  */
 @Composable
-private fun PageDots(
+internal fun PageDots(
     count: Int,
     current: Int,
     modifier: Modifier = Modifier,
@@ -180,4 +202,5 @@ private val DOT_SIZE = 6.dp
 private val DOT_ACTIVE_WIDTH = 18.dp
 private val DOT_GAP = 5.dp
 private const val DOT_IDLE_ALPHA = 0.45f
-private const val SCRIM_ALPHA = 0.32f
+/** Затемнение под точками и под кнопками поверх кадра. */
+internal const val SCRIM_ALPHA = 0.32f

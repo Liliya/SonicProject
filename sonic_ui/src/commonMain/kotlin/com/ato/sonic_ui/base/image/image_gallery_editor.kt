@@ -1,143 +1,178 @@
 package com.ato.sonic_ui.base.image
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ato.ui_state.base.image.UiImageGallery
 
 /**
- * Ряд картинок желания с плиткой «добавить» в конце.
+ * Картинки желания при правке: крупный кадр с перелистыванием.
  *
- * Раньше картинка была одна, и её редактирование было квадратом на 256dp
- * посреди экрана: место под ровно одну штуку, и никакого способа показать, что
- * их может быть больше. Ряд миниатюр говорит это сам, без подписи, — и он же
- * показывает, сколько ещё влезет: плитка «добавить» пропадает на последней.
+ * Раньше здесь был ряд миниатюр по 96dp. Ряд честно говорил, что картинок может
+ * быть несколько, и показывал, сколько ещё влезет, — но разглядеть на нём
+ * что-либо было нельзя, а именно за этим на них при правке и смотрят: та ли
+ * фотография и не пора ли её заменить. До ряда была одна картинка квадратом на
+ * 256dp, то есть место под ровно одну штуку.
  *
- * `LazyRow`, а не `Row` с равными долями: доли делили бы ширину экрана между
- * тем, что есть, и одна картинка растягивалась бы во весь экран, а три
- * съёживались. Миниатюра одного размера всегда, а если ряд не помещается —
- * прокручивается.
+ * Теперь кадр во всю ширину, ровно тот же и того же соотношения, что на экране
+ * просмотра ([WishGallery]): человек правит желание и видит его таким, каким
+ * увидит тот, кому он его покажет. До этого два экрана кадрировали одну и ту же
+ * фотографию по-разному.
+ *
+ * Что было в ряду ценного — понимание, сколько картинок всего, — дают точки, те
+ * же самые, что в просмотре. Чего ряд лишился — вида на все три разом; за это и
+ * платим крупным кадром, и размен того стоит: картинку удаляют по одной и глядя
+ * на неё, а не выбирая из трёх.
+ *
+ * @param addContentDescription подпись кнопки «добавить» для скринридера. Она
+ *   же и единственное, что о кнопке говорит: текста на ней нет, потому что
+ *   строки живут в ресурсах приложения, а не библиотеки.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ImageGalleryEditor(
     state: UiImageGallery,
     onAddClicked: () -> Unit,
     onRemoveClicked: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    itemSize: Dp = 96.dp,
     shape: Shape = MaterialTheme.shapes.medium,
     addContentDescription: String? = null,
     removeContentDescription: String? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
 ) {
-    LazyRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = contentPadding,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        itemsIndexedSlots(state, itemSize, shape, removeContentDescription, onRemoveClicked)
+    Column(modifier = modifier.padding(contentPadding)) {
+        if (state.isEmpty) {
+            // Пусто — вся площадь будущего кадра и есть кнопка «добавить».
+            // Маленькая плитка на её месте оставляла бы экран с дыркой, по
+            // которой не понять, что здесь будет фотография и какого размера.
+            AddArea(
+                shape = shape,
+                contentDescription = addContentDescription,
+                onClick = onAddClicked,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(GALLERY_RATIO),
+            )
+            return@Column
+        }
 
+        val pager = rememberPagerState(pageCount = { state.items.size })
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(GALLERY_RATIO)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .border(
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    shape = shape,
+                ),
+        ) {
+            HorizontalPager(
+                state = pager,
+                modifier = Modifier.fillMaxSize(),
+                // Ключ по содержимому слота: картинку удаляют из середины, и
+                // без ключа страница показала бы соседнюю.
+                key = { page -> state.items[page].url ?: "file-$page" },
+            ) { page ->
+                val slot = state.items[page]
+                WishPhoto(
+                    url = slot.url,
+                    file = slot.file,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // Крестик удаляет ту картинку, которая сейчас на экране. Раньше он
+            // висел у каждой миниатюры, наполовину вынесенный за её угол; на
+            // крупном кадре ему хватает места внутри.
+            OverlayButton(
+                icon = Icons.Filled.Close,
+                contentDescription = removeContentDescription,
+                onClick = { onRemoveClicked(pager.currentPage) },
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
+
+            if (state.items.size > 1) {
+                PageDots(
+                    count = state.items.size,
+                    current = pager.currentPage,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = DOTS_BOTTOM_INSET),
+                )
+            }
+        }
+
+        // Кнопка «добавить» пропадает на последней картинке — так же, как
+        // пропадала плитка в конце ряда.
         if (state.canAddMore) {
-            item(key = "add") {
-                AddTile(
-                    size = itemSize,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                AddArea(
                     shape = shape,
                     contentDescription = addContentDescription,
                     onClick = onAddClicked,
+                    modifier = Modifier.size(ADD_TILE_SIZE),
                 )
             }
         }
     }
 }
+
+/** Сторона кнопки «добавить», когда картинки уже есть. */
+private val ADD_TILE_SIZE = 56.dp
 
 /**
- * Вынесено из тела [LazyRow] отдельной функцией, чтобы ключи миниатюр и плитки
- * «добавить» задавались в одном месте: без ключей `LazyRow` считает элементы по
- * порядковому номеру, и удаление картинки из середины переносило бы состояние
- * соседней на её место.
+ * Место под картинку, оно же кнопка «добавить».
+ *
+ * Рамка обычная, волосяная, а не пунктирная: пунктир означал бы «здесь чего-то
+ * не хватает», а здесь всё в порядке — просто сюда можно нажать.
  */
-private fun LazyListScope.itemsIndexedSlots(
-    state: UiImageGallery,
-    itemSize: Dp,
-    shape: Shape,
-    removeContentDescription: String?,
-    onRemoveClicked: (Int) -> Unit,
-) {
-    state.items.forEachIndexed { index, slot ->
-        item(key = slot.url ?: "file-$index") {
-            Box {
-                WishPicture(
-                    url = slot.url,
-                    file = slot.file,
-                    size = itemSize,
-                    shape = shape,
-                    modifier = Modifier.border(
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                        shape = shape,
-                    ),
-                )
-
-                // Крестик наполовину вынесен за угол миниатюры: внутри он
-                // закрывал бы саму картинку, а у 96dp миниатюры её и так немного.
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 8.dp, y = (-8).dp)
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .clickable(role = Role.Button) { onRemoveClicked(index) },
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = removeContentDescription,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(6.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
 @Composable
-private fun AddTile(
-    size: Dp,
+private fun AddArea(
     shape: Shape,
     contentDescription: String?,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = Modifier
-            .size(size)
+        modifier = modifier
             .clip(shape)
             .border(
                 border = BorderStroke(
@@ -157,3 +192,48 @@ private fun AddTile(
         )
     }
 }
+
+/**
+ * Круглая кнопка поверх фотографии.
+ *
+ * Белое по затемнённому кругу, а не цвета темы: под кнопкой чужая фотография, и
+ * `onSurfaceVariant` читается на ней ровно настолько, насколько повезёт с
+ * кадром. Затемнение то же, что под точками ([SCRIM_ALPHA]).
+ *
+ * Размеров два, как и у «плюса» на карточке доски: круг нарисован на 36dp,
+ * потому что на кадре 4:3 круг в сорок восемь точек закрывает заметную его
+ * часть, — а нажимается всё равно 48dp, минимальная цель для пальца. Тем более
+ * что кнопка удаляет.
+ */
+@Composable
+private fun OverlayButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(OVERLAY_TOUCH_SIZE)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(OVERLAY_VISUAL_SIZE)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = SCRIM_ALPHA)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+private val OVERLAY_TOUCH_SIZE = 48.dp
+private val OVERLAY_VISUAL_SIZE = 36.dp
