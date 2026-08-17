@@ -1,6 +1,8 @@
 package com.ato.sonic_ui.wishlist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,8 +20,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,8 +42,9 @@ import com.ato.ui_state.wishlist.UiBoard
  * тридцать две точки от неё остаётся пятно, — но той же сетки: список досок и
  * список друзей должны читаться как один экран, набранный одной рукой.
  *
- * До этого здесь было 80dp по макету, и карточка занимала шестую часть экрана:
- * на телефон влезало четыре доски.
+ * Не уменьшалась вместе с остальным намеренно. Когда кнопка справа стала
+ * меньше, обложка осталась единственным крупным элементом строки — и стала
+ * тем, за что взгляд цепляется, идя по списку. Раньше эту роль отнимала кнопка.
  */
 private val COVER_SIZE = 48.dp
 
@@ -50,19 +55,53 @@ private val MEDIA_GAP = 12.dp
 private val ROW_INSET = 12.dp
 
 /**
- * Поля по вертикали. Меньше горизонтальных: высоту здесь задаёт обложка, а не
- * они, и лишние точки сверху и снизу только отодвигают соседние карточки.
+ * Поля по вертикали. Меньше горизонтальных: высоту здесь задаёт текстовая
+ * колонка, а не они, и лишние точки сверху и снизу только отодвигают соседние
+ * карточки.
  */
-private val ROW_VERTICAL_INSET = 10.dp
+private val ROW_VERTICAL_INSET = 8.dp
 
-/** Кнопка «плюс» справа. 48dp — минимальная цель для пальца, ниже нельзя. */
-private val ADD_BUTTON_SIZE = 48.dp
+/**
+ * Видимая кнопка «плюс» — и область нажатия вокруг неё.
+ *
+ * Два размера, а не один, и это не запас на будущее. Кнопка нарисована на
+ * 36dp, потому что на 48 она весила столько же, сколько обложка слева, и
+ * строка получалась с двумя центрами. Но 48dp — минимальная цель для пальца, и
+ * уменьшить её вместе с рисунком значило бы вернуть промахи, из-за которых её
+ * когда-то и подняли с 40dp. Поэтому нажимается по-прежнему квадрат 48dp,
+ * просто закрашен внутри него не весь.
+ *
+ * Значок уменьшен пропорционально кнопке: 24dp внутри 36dp упирались бы в её
+ * края, и вместо кнопки со значком получился бы залитый квадрат.
+ */
+private val ADD_BUTTON_VISUAL = 36.dp
+private val ADD_BUTTON_TOUCH = 48.dp
+private val ADD_ICON_SIZE = 18.dp
 
 /** Зазор между названием и пометкой «основная» справа от него. */
 private val BADGE_GAP = 6.dp
 
 /** Зазор между строками в текстовой колонке. */
 private val LINE_GAP = 2.dp
+
+/**
+ * Кегль названия — на одну ступень мельче `titleMedium` (16sp), но не до
+ * `titleSmall` (14sp): на четырнадцати название весит столько же, сколько
+ * счётчик под ним, и строка теряет главное слово. Межстрочный — 1.33 кегля,
+ * как у `bodySmall`.
+ */
+private val TITLE_TEXT_SIZE = 15.sp
+private val TITLE_TEXT_LINE = 20.sp
+
+/**
+ * Насколько вторичный текст бледнее основного.
+ *
+ * Прозрачностью, а не отдельным цветом: `onSurfaceVariant` уже описан в теме
+ * под обе схемы, и второй цвет пришлось бы держать в паре с ним вручную.
+ * Замеренный контраст на карточке-«бумаге» — 7.1:1 в светлой теме и 6.3:1 в
+ * тёмной, то есть с запасом к минимуму 4.5:1 для мелкого текста.
+ */
+private const val SECONDARY_ALPHA = 0.8f
 
 /**
  * Строка доски в списке: обложка, название, счётчик и кому доска видна.
@@ -101,7 +140,7 @@ fun DisplayBoard(
 ) {
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = paperCardColor()),
         border = paperCardBorder(),
         elevation = CardDefaults.cardElevation(0.dp)
@@ -137,7 +176,10 @@ fun DisplayBoard(
                     // зияла дырка.
                     DisplayText(
                         state = data.boardName,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = TITLE_TEXT_SIZE,
+                            lineHeight = TITLE_TEXT_LINE,
+                        ),
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -155,7 +197,7 @@ fun DisplayBoard(
                 DisplayText(
                     state = data.boardWishCount,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = secondaryInk()
                 )
 
                 // Видимость — строкой, не пилюлей: см. описание выше.
@@ -164,7 +206,7 @@ fun DisplayBoard(
                     DisplayText(
                         state = it,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = secondaryInk(),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -174,19 +216,10 @@ fun DisplayBoard(
             if (onAddClicked != null) {
                 Spacer(modifier = Modifier.width(MEDIA_GAP))
 
-                CenteredIconCard(
-                    elevation = CardDefaults.cardElevation(0.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    ),
-                    icon = Icons.Filled.Add,
+                AddWishButton(
                     onClick = onAddClicked,
                     contentDescription = addContentDescription,
-                    // Было 40dp — ниже минимума в 48dp, из-за чего в том числе
-                    // промахивались UI-тесты.
-                    modifier = Modifier
-                        .size(ADD_BUTTON_SIZE)
-                        .let { if (addButtonTestTag != null) it.testTag(addButtonTestTag) else it }
+                    testTag = addButtonTestTag,
                 )
             }
         }
@@ -215,7 +248,7 @@ fun BoardCardSkeleton(
 ) {
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = paperCardColor()),
         border = paperCardBorder(),
         elevation = CardDefaults.cardElevation(0.dp),
@@ -232,12 +265,12 @@ fun BoardCardSkeleton(
             )
             Spacer(Modifier.width(MEDIA_GAP))
             Column(modifier = Modifier.weight(1f)) {
-                // Высоты блоков — межстрочные интервалы тех же стилей, какими
-                // набраны настоящие строки: 24 у titleMedium, 16 у bodySmall.
+                // Высоты блоков — межстрочные интервалы тех же строк, какие
+                // потом встанут на их место: 20 у названия, 16 у bodySmall.
                 SkeletonBlock(
                     modifier = Modifier
                         .fillMaxWidth(0.55f)
-                        .height(24.dp)
+                        .height(20.dp)
                 )
                 Spacer(Modifier.height(LINE_GAP))
                 SkeletonBlock(
@@ -255,11 +288,19 @@ fun BoardCardSkeleton(
                 }
             }
             if (own) {
+                // Ширину держит область нажатия, а закрашен внутри неё квадрат
+                // поменьше — заглушка повторяет то, что видно, а не то, что
+                // нажимается.
                 Spacer(Modifier.width(MEDIA_GAP))
-                SkeletonBlock(
-                    modifier = Modifier.size(ADD_BUTTON_SIZE),
-                    shape = MaterialTheme.shapes.medium,
-                )
+                Box(
+                    modifier = Modifier.size(ADD_BUTTON_TOUCH),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SkeletonBlock(
+                        modifier = Modifier.size(ADD_BUTTON_VISUAL),
+                        shape = MaterialTheme.shapes.small,
+                    )
+                }
             }
         }
     }
@@ -286,7 +327,7 @@ fun AddBoardCard(
 ) {
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = paperCardColor()),
         border = paperCardBorder(),
         elevation = CardDefaults.cardElevation(0.dp),
@@ -303,10 +344,10 @@ fun AddBoardCard(
             // выглядеть одним и тем же действием.
             Box(
                 modifier = Modifier
-                    .size(ADD_BUTTON_SIZE)
+                    .size(ADD_CARD_ICON_BOX)
                     .background(
                         color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.small,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -315,7 +356,7 @@ fun AddBoardCard(
                     // Подпись рядом уже всё сказала — значок для скринридера
                     // повторил бы её вторым голосом.
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(ADD_ICON_SIZE),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -324,10 +365,76 @@ fun AddBoardCard(
 
             Text(
                 text = label,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = TITLE_TEXT_SIZE,
+                    lineHeight = TITLE_TEXT_LINE,
+                ),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/**
+ * Квадрат с плюсом в карточке «новая доска».
+ *
+ * Крупнее кнопки на карточке доски (36dp), и это не рассогласование: там квадрат
+ * — сама кнопка, а нажимается область вокруг него, здесь нажимается вся
+ * карточка, и квадрат только показывает, о чём она. Заодно он и задаёт её
+ * высоту: 40 плюс поля.
+ */
+private val ADD_CARD_ICON_BOX = 40.dp
+
+/** Цвет вторичных строк карточки — см. [SECONDARY_ALPHA]. */
+@Composable
+private fun secondaryInk(): Color =
+    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = SECONDARY_ALPHA)
+
+/**
+ * Кнопка «добавить желание на эту доску».
+ *
+ * Нажимается квадрат [ADD_BUTTON_TOUCH], закрашен внутри него квадрат
+ * [ADD_BUTTON_VISUAL] — зачем так, написано у самих констант. Тег и обработчик
+ * стоят на внешнем квадрате, а не на внутреннем: иначе и палец, и UI-тест
+ * получили бы цель 36dp.
+ *
+ * Без подсветки нажатия, как и сама карточка доски: `indication = null` там
+ * стоит по той же причине — рябь на карточке размером во всю строку читается
+ * как перерисовка списка, а не как отклик кнопки.
+ */
+@Composable
+private fun AddWishButton(
+    onClick: () -> Unit,
+    contentDescription: String?,
+    testTag: String?,
+) {
+    Box(
+        modifier = Modifier
+            .size(ADD_BUTTON_TOUCH)
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onClick,
+            )
+            .let { if (testTag != null) it.testTag(testTag) else it },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(ADD_BUTTON_VISUAL)
+                .background(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.small,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(ADD_ICON_SIZE),
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
