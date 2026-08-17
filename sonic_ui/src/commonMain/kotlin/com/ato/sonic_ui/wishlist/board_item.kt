@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ato.sonic_ui.base.badge.LabelBadge
 import com.ato.sonic_ui.base.card.paperCardBorder
 import com.ato.sonic_ui.base.card.paperCardColor
