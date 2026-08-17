@@ -158,9 +158,17 @@ fun DisplayBoard(
  * Двух строк достаточно, хотя своя доска покажет ещё и ряд пометок: на холодном
  * старте неизвестно, чьи это доски, а высоту карточки задаёт обложка — она выше
  * трёх строк текста.
+ *
+ * @param hasAction рисовать ли справа заглушку кнопки. Пометки на заглушке
+ *   можно не угадывать — высота от них не зависит, — а вот кнопка занимает
+ *   место, и на чужих досках, где её нет, пустой квадрат обещал бы действие,
+ *   которого на карточке не появится.
  */
 @Composable
-fun BoardCardSkeleton(modifier: Modifier = Modifier) {
+fun BoardCardSkeleton(
+    modifier: Modifier = Modifier,
+    hasAction: Boolean = true,
+) {
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
@@ -192,11 +200,13 @@ fun BoardCardSkeleton(modifier: Modifier = Modifier) {
                         .height(12.dp)
                 )
             }
-            Spacer(Modifier.width(MEDIA_GAP))
-            SkeletonBlock(
-                modifier = Modifier.size(48.dp),
-                shape = MaterialTheme.shapes.small,
-            )
+            if (hasAction) {
+                Spacer(Modifier.width(MEDIA_GAP))
+                SkeletonBlock(
+                    modifier = Modifier.size(48.dp),
+                    shape = MaterialTheme.shapes.small,
+                )
+            }
         }
     }
 }
