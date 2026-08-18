@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ato.sonic_ui.base.card.paperCardBorder
+import com.ato.sonic_ui.base.card.paperCardColor
 import com.ato.sonic_ui.base.image.WishPicture
 import com.ato.ui_state.wishlist.WishlistWish
 
@@ -68,7 +70,15 @@ fun DisplayWish(
             modifier
         },
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(),
+        // Тот же «лист бумаги», что у карточки человека, карточки доски и
+        // карточек на «Подарю» ([paperCardColor], [paperCardBorder]). Здесь
+        // стояли цвета `Card` по умолчанию, то есть серая заливка без контура,
+        // — а серый в этом приложении означает «нажимать нечего»: так залиты
+        // список людей, которым видна доска, и блоки-пояснения. По желанию же
+        // нажимают всегда, это единственный способ его открыть.
+        colors = CardDefaults.cardColors(containerColor = paperCardColor()),
+        border = paperCardBorder(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         onClick = remember(wish) { { onClick.invoke(wish) } },
     ) {
         WishRow(

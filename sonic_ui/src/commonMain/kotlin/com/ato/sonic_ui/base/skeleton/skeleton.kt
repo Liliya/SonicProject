@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.ato.sonic_ui.base.card.paperCardBorder
+import com.ato.sonic_ui.base.card.paperCardColor
 
 /**
  * Заглушки на время загрузки.
@@ -59,12 +61,16 @@ private fun skeletonAlpha(): Float {
  * момент рисовали ничего — на холодном старте это читалось как вспышка пустоты.
  *
  * @param loadingLabel что произнесёт скринридер; блок озвучивается целиком
+ * @param card чем рисовать одну карточку. По умолчанию — [SkeletonCard], но
+ *   экран, где карточка своей формы, передаёт свою: заглушка не той высоты
+ *   двигает вёрстку в тот самый момент, ради которого она и рисуется.
  */
 @Composable
 fun ScreenSkeleton(
     modifier: Modifier = Modifier,
     cardCount: Int = 3,
     loadingLabel: String? = null,
+    card: @Composable (Modifier) -> Unit = { SkeletonCard(modifier = it) },
 ) {
     Column(
         modifier = modifier
@@ -87,7 +93,7 @@ fun ScreenSkeleton(
         )
         Spacer(Modifier.height(24.dp))
         repeat(cardCount) {
-            SkeletonCard(modifier = Modifier.fillMaxWidth())
+            card(Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
         }
     }
@@ -111,17 +117,21 @@ fun SkeletonBlock(
 
 /**
  * Заглушка карточки списка: кружок слева, две строки текста, действие справа —
- * та же раскладка, что у карточки доски и карточки желания.
+ * та же раскладка, что у карточки человека и карточки желания.
+ *
+ * Оформлена тем же «листом бумаги», что и настоящие карточки
+ * ([paperCardColor], [paperCardBorder]). До этого заглушка была залита
+ * `surfaceVariant` и обведена `outlinedCardBorder` — темнее и жирнее того, во
+ * что она превращалась, и список заметно светлел в момент подстановки данных.
+ * Смысл заглушки ровно в том, чтобы этого перехода не было видно.
  */
 @Composable
 fun SkeletonCard(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        border = CardDefaults.outlinedCardBorder(),
+        colors = CardDefaults.cardColors(containerColor = paperCardColor()),
+        border = paperCardBorder(),
         elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Row(

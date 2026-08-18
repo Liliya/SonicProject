@@ -2,6 +2,7 @@ package com.ato.sonic_ui.base.bottom_bar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
@@ -33,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,6 +53,23 @@ private val IndicatorHeight = 28.dp
 private val NavIconSize = 24.dp
 
 /**
+ * Высота полосы без системных отступов.
+ *
+ * У Material 3 это `defaultMinSize(80dp)`, а содержимому элемента нужно 52:
+ * пилюля 28, отступ до подписи 8 (`IndicatorVerticalPadding` плюс
+ * `NavigationBarIndicatorToLabelPadding`) и сама подпись 16. Оставшиеся
+ * двадцать восемь точек расходились по четырнадцать сверху и снизу, и полоса
+ * выглядела просторнее всего остального в приложении. Здесь 64: те же 52 плюс
+ * по шесть.
+ *
+ * Ниже 60 опускать нельзя. Material 3 считает высоту элемента как
+ * «содержимое плюс поля», где поле не меньше `IndicatorVerticalPadding` (4dp),
+ * и при меньшей высоте элемент перестаёт помещаться в полосу — не сжимается, а
+ * обрезается.
+ */
+private val BarHeight = 64.dp
+
+/**
  * Нижняя навигация.
  *
  * Три вещи, которые тут были не так:
@@ -57,7 +77,10 @@ private val NavIconSize = 24.dp
  *   охватывала иконку вместе с текстом; теперь текст в своём слоте `label`, а
  *   пилюля — вокруг иконки, как и задумано;
  * - высота была жёстко 64dp, и при системном увеличении шрифта подпись
- *   обрезалась; теперь высота своя у `NavigationBar`;
+ *   обрезалась. Сначала её отдали `NavigationBar` целиком, но его минимум —
+ *   80dp, и полоса вышла просторнее всего остального в приложении. Теперь
+ *   высота снова своя ([BarHeight]), только растёт вместе с масштабом шрифта,
+ *   поэтому подпись обрезать не может;
  * - цвета брались из `LocalContentColor` с альфой, вместо ролей темы.
  *
  * Пилюля рисуется своя, а материаловская гасится прозрачным цветом: её размер
@@ -66,7 +89,23 @@ private val NavIconSize = 24.dp
  */
 @Composable
 fun UiNavBar.Display(onClick: (Int) -> Unit = { }) {
+    val insets = NavigationBarDefaults.windowInsets
+
+    // Полоса растёт вместе с системным размером шрифта: подпись под иконкой
+    // набрана в sp, и на жёсткой высоте её однажды уже обрезало — ради этого
+    // высоту когда-то и отдали Material 3 целиком. Множитель возвращает
+    // плотность, не возвращая той поломки; меньше единицы не берём, потому что
+    // на уменьшенном шрифте полосе сжиматься уже некуда.
+    val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+
     NavigationBar(
+        // Системный отступ входит в высоту, потому что `NavigationBar`
+        // добавляет его внутри себя: без этого слагаемого на телефоне с
+        // жестовой навигацией полоса съела бы его из содержимого.
+        modifier = Modifier.height(
+            BarHeight * fontScale + insets.asPaddingValues().calculateBottomPadding()
+        ),
+        windowInsets = insets,
         tonalElevation = 0.dp,
         // `surfaceContainer`, а не `surface`: в Material 3 `surface` — это цвет
         // самого экрана, и панель, залитая им, от экрана ничем не отличается.

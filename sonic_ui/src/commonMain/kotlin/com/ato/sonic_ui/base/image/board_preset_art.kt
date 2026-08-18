@@ -1,70 +1,125 @@
 package com.ato.sonic_ui.base.image
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.ato.ui_state.base.image.BoardPresets
 
 /**
- * Как выглядят двенадцать встроенных картинок досок из [BoardPresets].
+ * Как выглядят двенадцать встроенных картинок досок из [BoardPresets]:
+ * готовый значок на бледной подложке.
  *
- * Те же правила, что у аватарок в `avatar_preset_art.kt`, и намеренно: доски и
- * профили должны выглядеть сделанными одной рукой.
+ * Значки раньше чертились здесь же — шесть предметов путями по `Canvas`, полтораста
+ * строк арифметики вида `Offset(side * 0.44f, side * 0.24f)`. Ровно этот разговор
+ * уже был у заглушки желания (`wish_placeholder.kt`), и кончился он тем же:
+ * правка формы означала правку кода, увидеть результат можно было только собрав
+ * приложение, а нарисованное руками рядом с настоящими иконками видно сразу —
+ * толщина линий своя, оптический размер свой, скругления свои.
  *
- * - рисуются на [Canvas], потому что одна и та же картинка нужна и на 40dp в
- *   списке досок, и на 56dp в шапке, а растр под каждый размер — это файлы в
- *   каждой плотности на каждую из двенадцати штук;
- *   [androidx.compose.ui.graphics.vector.ImageVector] тоже не подходит: в этом
- *   проекте это одноцветные значки (`MyIconPack`), под градиентную подложку он
- *   не заточен;
- * - подложка глубокая у всех двенадцати, а предмет всегда одного цвета
- *   ([GLYPH_COLOR]): контраст не зависит от того, какая картинка досталась, и
- *   не разъезжается между светлой и тёмной темой.
+ * Теперь это `material-icons-core`, тот же набор, из которого взяты все прочие
+ * значки приложения. Их шесть на двенадцать палитр: один и тот же значок на
+ * разных подложках различается с одного взгляда, а двенадцать разных силуэтов в
+ * одном списке читаются как свалка.
  *
- * Разница с аватарками одна: там пять силуэтов про людей и праздник, здесь
- * шесть предметов, по которым доску узнают в списке — подарок, дом, торт,
- * книга, самолёт, чашка.
+ * Набор в `material-icons-core` небольшой — сорок девять значков, — и подарка
+ * среди них нет, хотя для этого приложения он был бы первым. Расширенный набор
+ * (`material-icons-extended`) не подключён и подключён не будет: Google его
+ * закрыл, о чём написано прямо в `libs.versions.toml`. Поэтому шесть тем — те,
+ * что в наборе есть и про подарки говорят: дом, любимое, избранное, покупки,
+ * даты, места.
+ *
+ * Подложка бледная, значок насыщенный того же оттенка — правило то же, что у
+ * монограмм в `monogram.kt`, и тема здесь важна: шесть светлых квадратов на
+ * тёмном экране светились бы фонариками.
  */
 
-/** Тёплый белый вместо чистого: на цветной подложке он не режет глаз. */
-private val GLYPH_COLOR = Color(0xFFFFFDF8)
-
 private class BoardPresetArt(
-    val top: Color,
-    val bottom: Color,
-    val glyph: DrawScope.(Float, Color, Color) -> Unit,
+    val background: Color,
+    /** Цвет значка: тот же оттенок, что подложка, но насыщенный. */
+    val ink: Color,
+    val icon: ImageVector,
 )
 
 /**
- * Шесть предметов на двенадцать палитр. Шесть, а не двенадцать: один и тот же
- * предмет на разных подложках различается с одного взгляда, а двенадцать разных
- * силуэтов в одном списке читаются как свалка.
+ * Двенадцать палитр на шесть значков.
+ *
+ * Порядок не случаен: значки идут по кругу, поэтому пары с одним силуэтом —
+ * это 0 и 6, 1 и 7 и так далее. Их оттенки нарочно разведены далеко (терракота
+ * и небо, роза и мята), иначе два дома в одном списке пришлось бы различать по
+ * полутону.
+ *
+ * Первые шесть тонов — те же, что у монограмм, остальные шесть добавлены в том
+ * же регистре. Измеренный контраст значка к подложке: от 7.8:1 в светлой теме
+ * и от 8.3:1 в тёмной. Для сплошной фигуры хватило бы и 3:1, но у значков есть
+ * тонкие места — ножка звезды, ручка корзины, — и на трёх единицах они
+ * пропадают первыми.
  */
-private val BOARD_PRESET_ART: List<BoardPresetArt> = listOf(
-    BoardPresetArt(Color(0xFF2E7D5B), Color(0xFF1B5E3F), DrawScope::drawBoardGift),
-    BoardPresetArt(Color(0xFFE07A5F), Color(0xFFC75B41), DrawScope::drawBoardHouse),
-    BoardPresetArt(Color(0xFF5B7DB1), Color(0xFF3D5A8A), DrawScope::drawBoardCake),
-    BoardPresetArt(Color(0xFFB5838D), Color(0xFF8E5A6B), DrawScope::drawBoardBook),
-    BoardPresetArt(Color(0xFFD9A441), Color(0xFFB87C2A), DrawScope::drawBoardPlane),
-    BoardPresetArt(Color(0xFF6D9773), Color(0xFF4A7856), DrawScope::drawBoardCup),
-    BoardPresetArt(Color(0xFF8E7CC3), Color(0xFF6A55A0), DrawScope::drawBoardGift),
-    BoardPresetArt(Color(0xFF4FA3A5), Color(0xFF2F7C80), DrawScope::drawBoardHouse),
-    BoardPresetArt(Color(0xFFC96A8B), Color(0xFFA24A6C), DrawScope::drawBoardCake),
-    BoardPresetArt(Color(0xFF7A8B99), Color(0xFF566873), DrawScope::drawBoardBook),
-    BoardPresetArt(Color(0xFF9C6644), Color(0xFF7A4A2E), DrawScope::drawBoardPlane),
-    BoardPresetArt(Color(0xFF4A6FA5), Color(0xFF2F4C77), DrawScope::drawBoardCup),
+private val LightArt: List<BoardPresetArt> = listOf(
+    BoardPresetArt(Color(0xFFEDD7CB), Color(0xFF5F2C16), Icons.Filled.Home),          // терракота
+    BoardPresetArt(Color(0xFFEDD4D8), Color(0xFF5F2B37), Icons.Filled.Favorite),      // пыльная роза
+    BoardPresetArt(Color(0xFFD6E3D7), Color(0xFF2A4531), Icons.Filled.Star),          // шалфей
+    BoardPresetArt(Color(0xFFDCD8EC), Color(0xFF362D59), Icons.Filled.ShoppingCart),  // лаванда
+    BoardPresetArt(Color(0xFFDBDBDD), Color(0xFF303035), Icons.Filled.DateRange),     // графит
+    BoardPresetArt(Color(0xFFEBDFCB), Color(0xFF4C3A1F), Icons.Filled.Place),         // тёплый беж
+    BoardPresetArt(Color(0xFFD5E1F0), Color(0xFF26405F), Icons.Filled.Home),          // небо
+    BoardPresetArt(Color(0xFFD0E6E1), Color(0xFF204742), Icons.Filled.Favorite),      // мята
+    BoardPresetArt(Color(0xFFE6D6E8), Color(0xFF4B2D52), Icons.Filled.Star),          // слива
+    BoardPresetArt(Color(0xFFE0E4CC), Color(0xFF3C4522), Icons.Filled.ShoppingCart),  // олива
+    BoardPresetArt(Color(0xFFE4D9D1), Color(0xFF4B3A2F), Icons.Filled.DateRange),     // какао
+    BoardPresetArt(Color(0xFFD6E2E6), Color(0xFF27414A), Icons.Filled.Place),         // лёд
 )
+
+/**
+ * То же самое для тёмной темы, вывернутое наизнанку: подложка приглушена почти
+ * до фона экрана, значок — светлый.
+ */
+private val DarkArt: List<BoardPresetArt> = listOf(
+    BoardPresetArt(Color(0xFF4A3229), Color(0xFFF7D2BF), Icons.Filled.Home),
+    BoardPresetArt(Color(0xFF4A3034), Color(0xFFF7CFD6), Icons.Filled.Favorite),
+    BoardPresetArt(Color(0xFF2C3B2F), Color(0xFFCBE3CE), Icons.Filled.Star),
+    BoardPresetArt(Color(0xFF343048), Color(0xFFD8D1F5), Icons.Filled.ShoppingCart),
+    BoardPresetArt(Color(0xFF35343A), Color(0xFFDBDAE1), Icons.Filled.DateRange),
+    BoardPresetArt(Color(0xFF443A2B), Color(0xFFEFDFC1), Icons.Filled.Place),
+    BoardPresetArt(Color(0xFF2A3949), Color(0xFFCFE0F5), Icons.Filled.Home),
+    BoardPresetArt(Color(0xFF26403D), Color(0xFFC7E4DE), Icons.Filled.Favorite),
+    BoardPresetArt(Color(0xFF3E2F44), Color(0xFFEBD3EF), Icons.Filled.Star),
+    BoardPresetArt(Color(0xFF383D2B), Color(0xFFDDE3C4), Icons.Filled.ShoppingCart),
+    BoardPresetArt(Color(0xFF3E332C), Color(0xFFEBDBD0), Icons.Filled.DateRange),
+    BoardPresetArt(Color(0xFF2B3B40), Color(0xFFCFE1E7), Icons.Filled.Place),
+)
+
+/** Набор по теме — ровно как `monogramPalette()` у монограмм. */
+@Composable
+private fun boardArt(): List<BoardPresetArt> =
+    if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) LightArt else DarkArt
+
+/**
+ * Какую долю плитки занимает значок.
+ *
+ * Столько же занимали нарисованные предметы, и менять это при переходе на
+ * готовые значки не пришлось: у material-иконок внутри своего квадрата уже есть
+ * поле, поэтому на глаз они выходят чуть мельче прежних — ровно настолько,
+ * насколько плитка стала спокойнее.
+ */
+private const val GLYPH_FRACTION = 0.46f
 
 /**
  * Встроенная картинка доски номер [index].
@@ -78,188 +133,26 @@ fun BoardPresetImage(
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
 ) {
-    val art = BOARD_PRESET_ART[((index % BOARD_PRESET_ART.size) + BOARD_PRESET_ART.size) % BOARD_PRESET_ART.size]
+    val palette = boardArt()
+    val art = palette[((index % palette.size) + palette.size) % palette.size]
 
-    Canvas(modifier = modifier.clip(shape)) {
-        drawRect(
-            brush = Brush.linearGradient(
-                colors = listOf(art.top, art.bottom),
-                start = Offset.Zero,
-                end = Offset(size.width, size.height),
-            )
+    Box(
+        // Заливка ровная, без градиента. Градиент был при глубоких подложках и
+        // достался им от прежних двухстоповых кружков; на бледном тоне он не
+        // виден вовсе, а два близких цвета вместо одного — это два места, где
+        // палитра может разойтись.
+        modifier = modifier
+            .clip(shape)
+            .background(art.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = art.icon,
+            // Картинка доски декоративная: рядом всегда стоит её название, и
+            // скринридер прочитал бы «звезда» вторым голосом к нему.
+            contentDescription = null,
+            tint = art.ink,
+            modifier = Modifier.fillMaxSize(GLYPH_FRACTION),
         )
-
-        val side = size.minDimension * 0.46f
-        translate(left = (size.width - side) / 2f, top = (size.height - side) / 2f) {
-            art.glyph(this, side, GLYPH_COLOR, art.bottom)
-        }
     }
-}
-
-// Ниже — предметы. Каждый рисует себя в квадрате [0, side] x [0, side]; сдвиг в
-// центр картинки уже сделан вызывающим. [shade] — тот же цвет, что и низ
-// подложки: им идут прорези, которые иначе слились бы с самим предметом.
-
-// `internal`, а не `private`: этим же подарком рисуется заглушка желания без
-// картинки (`wish_placeholder.kt`). Рисовать её вторым, своим подарком значило
-// бы, что рядом на экране два разных подарка от одной руки.
-internal fun DrawScope.drawBoardGift(side: Float, color: Color, shade: Color) {
-    val corner = CornerRadius(side * 0.05f, side * 0.05f)
-
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.10f, side * 0.38f),
-        size = Size(side * 0.80f, side * 0.56f),
-        cornerRadius = corner,
-    )
-    // крышка чуть шире корпуса, как у настоящей коробки
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.02f, side * 0.24f),
-        size = Size(side * 0.96f, side * 0.16f),
-        cornerRadius = corner,
-    )
-    drawOval(
-        color = color,
-        topLeft = Offset(side * 0.20f, side * 0.06f),
-        size = Size(side * 0.28f, side * 0.20f),
-    )
-    drawOval(
-        color = color,
-        topLeft = Offset(side * 0.52f, side * 0.06f),
-        size = Size(side * 0.28f, side * 0.20f),
-    )
-    // лента — прорезь, поэтому цветом подложки
-    drawRect(
-        color = shade,
-        topLeft = Offset(side * 0.44f, side * 0.24f),
-        size = Size(side * 0.12f, side * 0.70f),
-    )
-}
-
-private fun DrawScope.drawBoardHouse(side: Float, color: Color, shade: Color) {
-    // крыша
-    val roof = Path().apply {
-        moveTo(side * 0.50f, side * 0.08f)
-        lineTo(side * 0.96f, side * 0.46f)
-        lineTo(side * 0.04f, side * 0.46f)
-        close()
-    }
-    drawPath(path = roof, color = color)
-
-    // стены
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.16f, side * 0.46f),
-        size = Size(side * 0.68f, side * 0.46f),
-        cornerRadius = CornerRadius(side * 0.05f, side * 0.05f),
-    )
-    // дверь — прорезь
-    drawRoundRect(
-        color = shade,
-        topLeft = Offset(side * 0.42f, side * 0.62f),
-        size = Size(side * 0.16f, side * 0.30f),
-        cornerRadius = CornerRadius(side * 0.04f, side * 0.04f),
-    )
-}
-
-private fun DrawScope.drawBoardCake(side: Float, color: Color, shade: Color) {
-    // свеча
-    drawRect(
-        color = color,
-        topLeft = Offset(side * 0.47f, side * 0.06f),
-        size = Size(side * 0.06f, side * 0.18f),
-    )
-    // огонёк
-    drawOval(
-        color = color,
-        topLeft = Offset(side * 0.43f, side * 0.00f),
-        size = Size(side * 0.14f, side * 0.10f),
-    )
-    // верхний ярус
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.20f, side * 0.28f),
-        size = Size(side * 0.60f, side * 0.26f),
-        cornerRadius = CornerRadius(side * 0.06f, side * 0.06f),
-    )
-    // нижний ярус
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.08f, side * 0.56f),
-        size = Size(side * 0.84f, side * 0.36f),
-        cornerRadius = CornerRadius(side * 0.06f, side * 0.06f),
-    )
-    // прорезь между ярусами
-    drawRect(
-        color = shade,
-        topLeft = Offset(side * 0.20f, side * 0.52f),
-        size = Size(side * 0.60f, side * 0.05f),
-    )
-}
-
-private fun DrawScope.drawBoardBook(side: Float, color: Color, shade: Color) {
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.12f, side * 0.10f),
-        size = Size(side * 0.76f, side * 0.80f),
-        cornerRadius = CornerRadius(side * 0.06f, side * 0.06f),
-    )
-    // корешок — прорезь вдоль левого края
-    drawRect(
-        color = shade,
-        topLeft = Offset(side * 0.26f, side * 0.10f),
-        size = Size(side * 0.06f, side * 0.80f),
-    )
-    // закладка
-    drawRect(
-        color = shade,
-        topLeft = Offset(side * 0.66f, side * 0.10f),
-        size = Size(side * 0.10f, side * 0.34f),
-    )
-}
-
-private fun DrawScope.drawBoardPlane(side: Float, color: Color, shade: Color) {
-    val body = Path().apply {
-        moveTo(side * 0.94f, side * 0.30f)
-        lineTo(side * 0.58f, side * 0.52f)
-        lineTo(side * 0.34f, side * 0.94f)
-        lineTo(side * 0.24f, side * 0.86f)
-        lineTo(side * 0.34f, side * 0.50f)
-        lineTo(side * 0.06f, side * 0.44f)
-        lineTo(side * 0.10f, side * 0.32f)
-        lineTo(side * 0.44f, side * 0.34f)
-        close()
-    }
-    drawPath(path = body, color = color)
-}
-
-private fun DrawScope.drawBoardCup(side: Float, color: Color, shade: Color) {
-    // чашка
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.14f, side * 0.30f),
-        size = Size(side * 0.56f, side * 0.52f),
-        cornerRadius = CornerRadius(side * 0.10f, side * 0.10f),
-    )
-    // ручка
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.68f, side * 0.40f),
-        size = Size(side * 0.22f, side * 0.24f),
-        cornerRadius = CornerRadius(side * 0.11f, side * 0.11f),
-    )
-    drawRoundRect(
-        color = shade,
-        topLeft = Offset(side * 0.74f, side * 0.46f),
-        size = Size(side * 0.10f, side * 0.12f),
-        cornerRadius = CornerRadius(side * 0.05f, side * 0.05f),
-    )
-    // блюдце
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(side * 0.06f, side * 0.86f),
-        size = Size(side * 0.72f, side * 0.08f),
-        cornerRadius = CornerRadius(side * 0.04f, side * 0.04f),
-    )
 }
