@@ -85,6 +85,11 @@ private val ROW_VERTICAL_INSET = 9.dp
  *
  * @param status маленькая подпись под `@ником` — например «Ждёт ответа».
  *   Слот, а не строка, потому что цвет у статуса свой в каждом списке.
+ * @param trailing действие над этим человеком — например «Разблокировать».
+ *   Стоит внутри карточки, справа от имени, и это не оформление: кнопка под
+ *   карточкой во всю ширину читается как действие над всем списком, а не над
+ *   тем, кто над ней написан. В списке из одного человека разницы не видно
+ *   вовсе, и «Разблокировать» выглядит как «разблокировать всех».
  */
 @Composable
 fun PersonCard(
@@ -95,6 +100,7 @@ fun PersonCard(
     colors: CardColors = CardDefaults.cardColors(containerColor = paperCardColor()),
     border: BorderStroke? = paperCardBorder(),
     status: (@Composable () -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val shape = MaterialTheme.shapes.medium
@@ -108,7 +114,7 @@ fun PersonCard(
             border = border,
             elevation = elevation,
         ) {
-            PersonRow(name, nick, avaUrl, onClick = null, status = status)
+            PersonRow(name, nick, avaUrl, onClick = null, status = status, trailing = trailing)
         }
     } else {
         Card(
@@ -119,7 +125,7 @@ fun PersonCard(
             elevation = elevation,
             onClick = onClick,
         ) {
-            PersonRow(name, nick, avaUrl, onClick = onClick, status = status)
+            PersonRow(name, nick, avaUrl, onClick = onClick, status = status, trailing = trailing)
         }
     }
 }
@@ -131,6 +137,7 @@ private fun PersonRow(
     avaUrl: String?,
     onClick: (() -> Unit)?,
     status: (@Composable () -> Unit)?,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -182,6 +189,14 @@ private fun PersonRow(
                 Spacer(Modifier.height(4.dp))
                 it()
             }
+        }
+
+        // Действие меряется первым: у колонки с именем `weight(1f)`, поэтому
+        // ужимается она, а кнопка получает ровно ту ширину, которую просит, и
+        // подпись на ней не обрезается ни в одном языке.
+        trailing?.let {
+            Spacer(Modifier.width(8.dp))
+            it()
         }
 
         if (onClick != null) {

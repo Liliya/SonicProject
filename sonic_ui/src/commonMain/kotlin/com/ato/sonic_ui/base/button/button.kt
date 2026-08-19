@@ -1,5 +1,6 @@
 package com.ato.sonic_ui.base.button
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -37,12 +38,19 @@ fun UiButton.Display(
     }
 }
 
+/**
+ * @param contentPadding поля вокруг подписи. Свои нужны кнопке, которая стоит
+ *   не отдельной строкой, а внутри карточки рядом с текстом: с обычными
+ *   двадцатью четырьмя точками по бокам она отбирает у имени столько ширины,
+ *   что от него остаётся многоточие.
+ */
 @Composable
 fun DisplayButton(
     state: UiButton,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
 ) {
     if (state.isVisible) {
         Button(
@@ -50,6 +58,7 @@ fun DisplayButton(
             modifier = modifier,
             onClick = onClick,
             enabled = state.isEnabled,
+            contentPadding = contentPadding,
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator(
